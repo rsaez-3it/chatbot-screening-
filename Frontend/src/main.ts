@@ -8,9 +8,6 @@ import vSelect from 'vue-select'
 import uikit from 'uikit-3it-vue'
 import 'uikit-3it-vue/dist/css/uikit-3it-vue.css'
 
-// Import custom SCSS styles (core, fonts, forms)
-import '@/assets/scss/main.scss'
-
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 
@@ -24,9 +21,6 @@ import { fab } from '@fortawesome/free-brands-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
 library.add(fas, far, fab)
-
-// Theme colors are initialized in theme.store.ts following 3IT blank project pattern
-// Do NOT initialize handleThemeColors here to avoid conflicts
 
 const app = createApp(App)
 

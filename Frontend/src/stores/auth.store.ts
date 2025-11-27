@@ -89,6 +89,9 @@ export const useStoreAuth = defineStore('auth', () => {
   const getUserConfig = async () => {
     try {
       const response = await fetch(`/db/config/config.json`)
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
       const data = await response.json()
       menu.value = data.menu
       localStorage.setItem('menu', JSON.stringify(data.menu))
@@ -97,12 +100,12 @@ export const useStoreAuth = defineStore('auth', () => {
       }
     } catch (error) {
       console.error('Error cargando config:', error)
+      // Usar menú por defecto si falla
+      menu.value = defaultMenu
+      localStorage.setItem('menu', JSON.stringify(defaultMenu))
       errorBack.value = error
     }
   }
-  
-  // Cargar configuración al inicializar
-  getUserConfig()
 /*   async function login(credentials: { email: string; password: string }) {
     try {
       loginSubmitting.value = true

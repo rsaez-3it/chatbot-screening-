@@ -12,42 +12,17 @@
 				"requiresPermissions": false,
 				"module": "Home",
 				"submenu": []
-			}
-		],
-		"admin": [
-			{
-				"id": 210,
-				"name": "Usuarios",
-				"icon": "fa-solid fa-circle-user",
-				"url": "",
-				"requiresPermissions": true,
-				"module": "Users",
-				"submenu": [
-					{
-						"id": 211,
-						"name": "Lista de usuarios",
-						"url": "/users",
-						"requiresPermissions": true,
-						"module": "Users"
-					},
-					{
-						"id": 212,
-						"name": "Roles de usuario",
-						"url": "/users/roles",
-						"requiresPermissions": true,
-						"module": "Roles"
-					}
-				]
 			},
 			{
-				"id": 220,
-				"name": "Ejemplos",
-				"icon": "fa-solid fa-window-restore",
-				"url": "/examples",
+				"id": 120,
+				"name": "Chatbots",
+				"icon": "fa-solid fa-robot",
+				"url": "/chatbots/new",
 				"requiresPermissions": false,
-				"module": "Examples",
+				"module": "Chatbots",
 				"submenu": []
 			}
-		]
+		],
+		"admin": []
 	}
 }

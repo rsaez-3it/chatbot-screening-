@@ -10,8 +10,8 @@
         © 2025 3IT. Todos los derechos reservados.
     </footer>
 </template>
-<style lang="scss">
-	.eit-footer {
-		grid-area: eit-footer;
-	}
+<style scoped>
+.eit-footer {
+	grid-area: eit-footer;
+}
 </style>

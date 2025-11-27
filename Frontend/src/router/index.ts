@@ -50,7 +50,7 @@ const routes: RouteRecordRaw[] = [
     component: HomeView,
     meta: {
       title: 'Inicio',
-      layout: 'LayoutPublicDefault',
+      layout: 'LayoutPrivateDefault',
       requiresAuth: false,
       permissionType: 'canRead',
       requiresPermissions: false,
