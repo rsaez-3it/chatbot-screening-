@@ -14,6 +14,7 @@ import RolesView from '@/views/roles/RolesView.vue'
 import RolesListView from '@/views/roles/children/RolesListView.vue'
 import RolesFormView from '@/views/roles/children/RolesFormView.vue'
 import ChatbotFormView from '@/views/chatbot/ChatbotFormView.vue'
+import ChatbotListView from '@/views/chatbot/ChatbotListView.vue'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -177,7 +178,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/chatbots',
     name: 'Chatbots',
-    redirect: '/chatbots/new',
+    component: ChatbotListView,
     meta: {
       title: 'Chatbots',
       layout: 'LayoutPrivateDefault',
@@ -186,37 +187,35 @@ const routes: RouteRecordRaw[] = [
       requiresPermissions: false,
       module: 'Chatbots',
       parent: ''
-    },
-    children: [
-      {
-        path: 'new',
-        name: 'Nuevo chatbot',
-        component: ChatbotFormView,
-        meta: {
-          title: 'Nuevo chatbot',
-          layout: 'LayoutPrivateDefault',
-          requiresAuth: false,
-          permissionType: 'canCreate',
-          requiresPermissions: false,
-          module: 'Chatbots',
-          parent: ''
-        }
-      },
-      {
-        path: 'edit=:id',
-        name: 'Editar chatbot',
-        component: ChatbotFormView,
-        meta: {
-          title: 'Editar chatbot',
-          layout: 'LayoutPrivateDefault',
-          requiresAuth: false,
-          permissionType: 'canUpdate',
-          requiresPermissions: false,
-          module: 'Chatbots',
-          parent: ''
-        }
-      },
-    ],
+    }
+  },
+  {
+    path: '/chatbots/new',
+    name: 'Nuevo chatbot',
+    component: ChatbotFormView,
+    meta: {
+      title: 'Nuevo chatbot',
+      layout: 'LayoutPrivateDefault',
+      requiresAuth: false,
+      permissionType: 'canCreate',
+      requiresPermissions: false,
+      module: 'Chatbots',
+      parent: ''
+    }
+  },
+  {
+    path: '/chatbots/edit=:id',
+    name: 'Editar chatbot',
+    component: ChatbotFormView,
+    meta: {
+      title: 'Editar chatbot',
+      layout: 'LayoutPrivateDefault',
+      requiresAuth: false,
+      permissionType: 'canUpdate',
+      requiresPermissions: false,
+      module: 'Chatbots',
+      parent: ''
+    }
   },
   {
     path: '/unauthorized',

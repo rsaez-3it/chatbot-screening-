@@ -635,7 +635,7 @@ async function guardarChatbot() {
     }
 
     alert(esEdicion.value ? 'Chatbot actualizado exitosamente' : 'Chatbot creado exitosamente')
-    router.push('/admin/chatbots')
+    router.push('/')
   } catch (error) {
     console.error('Error al guardar chatbot:', error)
     alert('Error al guardar el chatbot')
