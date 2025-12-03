@@ -7,6 +7,7 @@ const mensajesRepository = require('../repositories/mensajesRepository');
 const sesionesRepository = require('../repositories/sesionesRepository');
 const preguntasRepository = require('../repositories/preguntasRepository');
 const evaluacionService = require('./evaluacion/evaluacionService');
+const perfilService = require('./perfilService');
 
 /**
  * Registrar un mensaje del sistema
@@ -133,7 +134,45 @@ const registrarRespuesta = async (sesionId, preguntaId, contenido, metadata = nu
     const mensajeId = await mensajesRepository.crear(datos);
     const mensaje = await mensajesRepository.obtenerPorId(mensajeId);
 
-    // 🔥 AUTO-EVALUACIÓN: Evaluar la respuesta automáticamente
+    // 👤 PREGUNTA DE PERFIL: Guardar en sesión, NO evaluar
+    if (perfilService.esPreguntaPerfil(pregunta)) {
+      console.log(`👤 Guardando dato de perfil: ${pregunta.campo_perfil}`);
+      
+      try {
+        // Validar formato de la respuesta
+        const validacion = perfilService.validarRespuestaPerfil(pregunta, contenido);
+        
+        if (!validacion.valido) {
+          mensaje.validacion_perfil = {
+            valido: false,
+            mensaje: validacion.mensaje
+          };
+          return mensaje;
+        }
+
+        // Guardar en la sesión
+        await perfilService.guardarRespuestaPerfil(sesionId, pregunta, contenido);
+        
+        mensaje.es_dato_perfil = true;
+        mensaje.validacion_perfil = {
+          valido: true,
+          mensaje: 'Dato guardado correctamente'
+        };
+        
+        console.log(`✅ Dato de perfil guardado: ${pregunta.campo_perfil} = ${contenido}`);
+        
+      } catch (perfilError) {
+        console.error('⚠️  Error al guardar dato de perfil:', perfilError);
+        mensaje.validacion_perfil = {
+          valido: false,
+          mensaje: 'Error al guardar el dato'
+        };
+      }
+      
+      return mensaje;
+    }
+
+    // 🔥 AUTO-EVALUACIÓN: Evaluar la respuesta automáticamente (solo preguntas normales)
     console.log(`🤖 Evaluando automáticamente respuesta del mensaje ${mensajeId}`);
 
     try {

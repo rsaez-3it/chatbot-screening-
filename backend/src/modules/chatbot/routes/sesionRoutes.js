@@ -38,6 +38,12 @@ router.get('/:token/validar', sesionController.validar);
 router.get('/:token/resumen', sesionController.obtenerResumen);
 
 /**
+ * GET /api/sesiones/:token/preguntas-perfil
+ * Obtener preguntas de perfil faltantes
+ */
+router.get('/:token/preguntas-perfil', sesionController.obtenerPreguntasPerfil);
+
+/**
  * POST /api/sesiones/:token/iniciar
  * Iniciar una sesión (cambiar estado a "en_progreso")
  */

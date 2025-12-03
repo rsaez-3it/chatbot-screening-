@@ -6,6 +6,7 @@
 const sesionService = require('../services/sesionService');
 const sesionesRepository = require('../repositories/sesionesRepository');
 const configRepository = require('../repositories/configRepository');
+const perfilService = require('../services/perfilService');
 
 /**
  * POST /api/sesiones
@@ -348,7 +349,7 @@ const procesarExpiradas = async (req, res, next) => {
 const finalizarEvaluacion = async (req, res, next) => {
   try {
     const { token } = req.params;
-    const { umbral_aprobacion } = req.body;
+    const { umbral_aprobacion } = req.body || {};
 
     const sesion = await sesionService.finalizarEvaluacion(token, umbral_aprobacion);
 
@@ -356,6 +357,46 @@ const finalizarEvaluacion = async (req, res, next) => {
       success: true,
       message: 'Evaluación finalizada correctamente',
       data: sesion
+    });
+
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * GET /api/sesiones/:token/preguntas-perfil
+ * Obtener preguntas de perfil faltantes para una sesión
+ */
+const obtenerPreguntasPerfil = async (req, res, next) => {
+  try {
+    const { token } = req.params;
+
+    // Obtener sesión completa
+    const sesion = await sesionesRepository.obtenerSesionCompleta(token);
+
+    if (!sesion) {
+      return res.status(404).json({
+        success: false,
+        message: 'Sesión no encontrada'
+      });
+    }
+
+    // Obtener preguntas de perfil faltantes
+    const preguntasFaltantes = await perfilService.obtenerPreguntasFaltantes(sesion.config_id, sesion);
+
+    res.json({
+      success: true,
+      data: {
+        tiene_preguntas_faltantes: preguntasFaltantes.length > 0,
+        total_faltantes: preguntasFaltantes.length,
+        preguntas: preguntasFaltantes,
+        datos_actuales: {
+          nombre: sesion.candidato_nombre,
+          email: sesion.candidato_email,
+          telefono: sesion.candidato_telefono
+        }
+      }
     });
 
   } catch (error) {
@@ -376,5 +417,6 @@ module.exports = {
   actualizar,
   eliminar,
   procesarExpiradas,
-  finalizarEvaluacion
+  finalizarEvaluacion,
+  obtenerPreguntasPerfil
 };

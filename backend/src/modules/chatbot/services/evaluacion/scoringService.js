@@ -73,38 +73,66 @@ class ScoringService {
    * @returns {Object} Resultado completo
    */
   static calcularResultadoCompleto(evaluaciones, umbralAprobacion) {
+    // Calcular puntajes SIEMPRE (incluso si hay eliminatorias reprobadas)
+    const { puntaje_total, puntaje_maximo } = this.calcularPuntaje(evaluaciones);
+    const porcentaje = this.calcularPorcentaje(puntaje_total, puntaje_maximo);
+    
     // Verificar eliminatorias
     const tieneEliminatoriasReprobadas = this.tieneEliminatoriasReprobadas(evaluaciones);
 
     if (tieneEliminatoriasReprobadas) {
+      const totalPreguntas = evaluaciones.length;
+      const preguntasAprobadas = evaluaciones.filter(e => e.cumple).length;
+      const preguntasReprobadas = totalPreguntas - preguntasAprobadas;
+      
       return {
-        puntaje_total: 0,
-        puntaje_maximo: 0,
-        porcentaje: 0,
+        puntaje_total,
+        puntaje_maximo,
+        porcentaje,
         resultado: 'rechazado',
         razon: 'Reprobó una o más preguntas eliminatorias',
-        eliminatorias_reprobadas: evaluaciones.filter(e => e.es_eliminatoria && !e.cumple).length
+        eliminatorias_reprobadas: evaluaciones.filter(e => e.es_eliminatoria && !e.cumple).length,
+        estadisticas: {
+          total_preguntas: totalPreguntas,
+          preguntas_aprobadas: preguntasAprobadas,
+          preguntas_reprobadas: preguntasReprobadas,
+          porcentaje_preguntas_aprobadas: Math.round((preguntasAprobadas / totalPreguntas) * 100)
+        }
       };
     }
-
-    // Calcular puntajes
-    const { puntaje_total, puntaje_maximo } = this.calcularPuntaje(evaluaciones);
-    const porcentaje = this.calcularPorcentaje(puntaje_total, puntaje_maximo);
-    const resultado = this.determinarAprobacion(porcentaje, umbralAprobacion);
-
+    
     // Estadísticas adicionales
     const totalPreguntas = evaluaciones.length;
     const preguntasAprobadas = evaluaciones.filter(e => e.cumple).length;
     const preguntasReprobadas = totalPreguntas - preguntasAprobadas;
+
+    // Determinar resultado:
+    // - APROBADO: Pasó todas las preguntas (100%)
+    // - CONSIDERAR: Alcanzó el umbral pero reprobó alguna pregunta no eliminatoria
+    // - RECHAZADO: No alcanzó el umbral
+    let resultado;
+    let razon;
+
+    if (preguntasReprobadas === 0) {
+      // Pasó todas las preguntas
+      resultado = 'aprobado';
+      razon = `Aprobado - Respondió correctamente todas las preguntas (${porcentaje}%)`;
+    } else if (porcentaje >= umbralAprobacion) {
+      // Alcanzó el umbral pero reprobó alguna pregunta no eliminatoria
+      resultado = 'considerar';
+      razon = `Para considerar - Alcanzó ${porcentaje}% pero reprobó ${preguntasReprobadas} pregunta(s) no eliminatoria(s)`;
+    } else {
+      // No alcanzó el umbral
+      resultado = 'rechazado';
+      razon = `Reprobado - Obtuvo ${porcentaje}% (umbral requerido: ${umbralAprobacion}%)`;
+    }
 
     return {
       puntaje_total,
       puntaje_maximo,
       porcentaje,
       resultado,
-      razon: resultado === 'aprobado'
-        ? `Aprobado con ${porcentaje}% (umbral: ${umbralAprobacion}%)`
-        : `Reprobado con ${porcentaje}% (umbral: ${umbralAprobacion}%)`,
+      razon,
       estadisticas: {
         total_preguntas: totalPreguntas,
         preguntas_aprobadas: preguntasAprobadas,

@@ -177,71 +177,9 @@ const enviarInvitacion = async (candidatoEmail, chatbotUrl, config, sesion) => {
   }
 };
 
-/**
- * Enviar notificación de aprobación
- * @param {string} candidatoEmail - Email del candidato
- * @param {Object} sesionData - Datos completos de la sesión
- * @returns {Promise<Object>} Resultado del envío
- */
-const enviarAprobado = async (candidatoEmail, sesionData) => {
-  try {
-    console.log(`📧 Enviando notificación de aprobación a ${candidatoEmail}`);
-
-    const plantilla = await obtenerPlantilla('aprobado');
-
-    const variables = {
-      nombre_candidato: sesionData.candidato_nombre || 'Candidato',
-      nombre_chatbot: sesionData.chatbot_nombre || 'Evaluación',
-      nombre_empresa: sesionData.nombre_empresa || 'Nuestra empresa',
-      puntaje: sesionData.porcentaje || 0,
-      umbral: sesionData.umbral_aprobacion || 70,
-      fecha_completado: new Date(sesionData.fecha_completado).toLocaleDateString('es-ES'),
-      mensaje_personalizado: sesionData.mensaje_aprobado || '¡Felicitaciones por tu excelente desempeño!'
-    };
-
-    const asunto = renderizarPlantilla(plantilla.asunto, variables);
-    const cuerpo = renderizarPlantilla(plantilla.cuerpo, variables);
-
-    return await enviarEmail(candidatoEmail, asunto, cuerpo);
-
-  } catch (error) {
-    console.error('Error al enviar email de aprobación:', error);
-    throw error;
-  }
-};
-
-/**
- * Enviar notificación de rechazo
- * @param {string} candidatoEmail - Email del candidato
- * @param {Object} sesionData - Datos completos de la sesión
- * @returns {Promise<Object>} Resultado del envío
- */
-const enviarRechazado = async (candidatoEmail, sesionData) => {
-  try {
-    console.log(`📧 Enviando notificación de rechazo a ${candidatoEmail}`);
-
-    const plantilla = await obtenerPlantilla('rechazado');
-
-    const variables = {
-      nombre_candidato: sesionData.candidato_nombre || 'Candidato',
-      nombre_chatbot: sesionData.chatbot_nombre || 'Evaluación',
-      nombre_empresa: sesionData.nombre_empresa || 'Nuestra empresa',
-      puntaje: sesionData.porcentaje || 0,
-      umbral: sesionData.umbral_aprobacion || 70,
-      fecha_completado: new Date(sesionData.fecha_completado).toLocaleDateString('es-ES'),
-      mensaje_personalizado: sesionData.mensaje_rechazado || 'Gracias por tu tiempo e interés en formar parte de nuestro equipo.'
-    };
-
-    const asunto = renderizarPlantilla(plantilla.asunto, variables);
-    const cuerpo = renderizarPlantilla(plantilla.cuerpo, variables);
-
-    return await enviarEmail(candidatoEmail, asunto, cuerpo);
-
-  } catch (error) {
-    console.error('Error al enviar email de rechazo:', error);
-    throw error;
-  }
-};
+// NOTA: Las funciones enviarAprobado y enviarRechazado fueron eliminadas
+// El candidato NO recibe emails después de completar la evaluación
+// Solo el reclutador recibe notificación con PDF adjunto
 
 /**
  * Notificar al reclutador sobre nueva evaluación completada
@@ -258,9 +196,24 @@ const notificarReclutador = async (reclutadorEmail, sesionData) => {
     console.log('📄 Generando PDF del reporte...');
     const pdfBuffer = await pdfService.generarReporteCandidato(sesionData);
 
-    // 2. CONSTRUIR EMAIL COMPLETO CON TODA LA INFORMACIÓN
-    const colorResultado = sesionData.resultado === 'aprobado' ? '#28a745' : '#dc3545';
-    const textoResultado = sesionData.resultado === 'aprobado' ? 'APROBADO ✅' : 'RECHAZADO ❌';
+    // 2. CONSTRUIR EMAIL SIMPLE (todo está en el PDF)
+    let textoResultado, colorResultado;
+    
+    switch(sesionData.resultado) {
+      case 'aprobado':
+        textoResultado = 'APROBADO ✅';
+        colorResultado = '#28a745';
+        break;
+      case 'considerar':
+        textoResultado = 'CONSIDERAR ⚠️';
+        colorResultado = '#ff9800';
+        break;
+      case 'rechazado':
+      default:
+        textoResultado = 'RECHAZADO ❌';
+        colorResultado = '#dc3545';
+        break;
+    }
 
     const cuerpoHtml = `
 <!DOCTYPE html>
@@ -279,233 +232,123 @@ const notificarReclutador = async (reclutadorEmail, sesionData) => {
       padding: 0;
     }
     .container {
-      max-width: 800px;
-      margin: 20px auto;
+      max-width: 600px;
+      margin: 40px auto;
       background-color: #ffffff;
       border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
       overflow: hidden;
     }
     .header {
       background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%);
       color: #ffffff;
-      padding: 30px;
+      padding: 40px 30px;
       text-align: center;
     }
     .header h1 {
-      margin: 0;
+      margin: 0 0 10px 0;
       font-size: 28px;
       font-weight: 600;
     }
     .header p {
-      margin: 8px 0 0 0;
+      margin: 0;
       font-size: 16px;
-      opacity: 0.9;
+      opacity: 0.95;
     }
     .content {
-      padding: 30px;
-    }
-    .section {
-      margin-bottom: 30px;
-    }
-    .section-title {
-      color: #1a73e8;
-      font-size: 18px;
-      font-weight: 600;
-      margin-bottom: 15px;
-      padding-bottom: 8px;
-      border-bottom: 2px solid #1a73e8;
-    }
-    .info-grid {
-      display: grid;
-      grid-template-columns: 200px 1fr;
-      gap: 12px;
-      margin-bottom: 20px;
-    }
-    .info-label {
-      font-weight: 600;
-      color: #555555;
-    }
-    .info-value {
-      color: #333333;
+      padding: 40px 30px;
+      text-align: center;
     }
     .resultado-badge {
       display: inline-block;
-      padding: 12px 24px;
-      border-radius: 6px;
-      font-size: 20px;
+      padding: 15px 30px;
+      border-radius: 8px;
+      font-size: 24px;
       font-weight: 700;
-      text-align: center;
       margin: 20px 0;
       color: #ffffff;
       background-color: ${colorResultado};
     }
-    .mensaje {
+    .candidato-info {
       background-color: #f8f9fa;
-      border-left: 4px solid #dee2e6;
-      padding: 15px;
-      margin-bottom: 15px;
-      border-radius: 4px;
-    }
-    .mensaje.sistema {
-      border-left-color: #6c757d;
-    }
-    .mensaje.pregunta {
-      border-left-color: #1a73e8;
-      background-color: #e3f2fd;
-    }
-    .mensaje.respuesta {
-      border-left-color: #28a745;
-      background-color: #f1f8f4;
-    }
-    .mensaje-header {
-      font-size: 12px;
-      color: #666666;
-      margin-bottom: 8px;
-      font-weight: 600;
-    }
-    .mensaje-contenido {
-      color: #333333;
-      font-size: 14px;
-      line-height: 1.5;
-    }
-    .evaluacion-item {
-      background-color: #ffffff;
-      border: 1px solid #dee2e6;
-      border-radius: 6px;
+      border-radius: 8px;
       padding: 20px;
-      margin-bottom: 20px;
+      margin: 30px 0;
+      text-align: left;
     }
-    .evaluacion-pregunta {
-      font-weight: 600;
-      color: #1a73e8;
-      margin-bottom: 10px;
+    .candidato-info p {
+      margin: 8px 0;
       font-size: 15px;
     }
-    .evaluacion-respuesta {
+    .candidato-info strong {
+      color: #1a73e8;
+    }
+    .pdf-info {
+      background-color: #e3f2fd;
+      border: 2px solid #1a73e8;
+      border-radius: 8px;
+      padding: 25px;
+      margin: 30px 0;
+    }
+    .pdf-icon {
+      font-size: 48px;
+      margin-bottom: 15px;
+    }
+    .pdf-info h3 {
+      margin: 0 0 10px 0;
+      color: #1a73e8;
+      font-size: 18px;
+    }
+    .pdf-info p {
+      margin: 5px 0;
       color: #555555;
-      margin-bottom: 10px;
       font-size: 14px;
-      font-style: italic;
-    }
-    .evaluacion-resultado {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 10px;
-      margin-top: 15px;
-      padding-top: 15px;
-      border-top: 1px solid #dee2e6;
-    }
-    .evaluacion-campo {
-      font-size: 13px;
-    }
-    .evaluacion-campo strong {
-      color: #555555;
-    }
-    .correcta {
-      color: #28a745;
-      font-weight: 700;
-    }
-    .incorrecta {
-      color: #dc3545;
-      font-weight: 700;
     }
     .footer {
       background-color: #f8f9fa;
-      padding: 20px 30px;
+      padding: 20px;
       text-align: center;
       color: #666666;
       font-size: 13px;
-    }
-    .adjunto-info {
-      background-color: #fff3cd;
-      border: 1px solid #ffc107;
-      border-radius: 6px;
-      padding: 15px;
-      margin: 20px 0;
-      text-align: center;
-    }
-    .adjunto-info strong {
-      color: #856404;
+      border-top: 1px solid #dee2e6;
     }
   </style>
 </head>
 <body>
   <div class="container">
-
-    <!-- HEADER -->
+    
     <div class="header">
       <h1>ChatBot 3IT</h1>
       <p>Nueva Evaluación Completada</p>
     </div>
 
-    <!-- CONTENT -->
     <div class="content">
-
-      <!-- INFORMACIÓN DEL CANDIDATO -->
-      <div class="section">
-        <div class="section-title">📋 Información del Candidato</div>
-        <div class="info-grid">
-          <div class="info-label">Nombre:</div>
-          <div class="info-value">${sesionData.candidato_nombre || 'No especificado'}</div>
-
-          <div class="info-label">Email:</div>
-          <div class="info-value">${sesionData.candidato_email || 'No especificado'}</div>
-
-          <div class="info-label">Teléfono:</div>
-          <div class="info-value">${sesionData.candidato_telefono || 'No especificado'}</div>
-
-          <div class="info-label">Fecha de evaluación:</div>
-          <div class="info-value">${new Date(sesionData.fecha_fin || sesionData.fecha_completado).toLocaleString('es-ES', {
-            year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
-          })}</div>
-
-          <div class="info-label">Chatbot:</div>
-          <div class="info-value">${sesionData.chatbot_nombre || 'Evaluación'}</div>
-        </div>
+      
+      <div class="resultado-badge">${textoResultado}</div>
+      
+      <div class="candidato-info">
+        <p><strong>Candidato:</strong> ${sesionData.candidato_nombre || 'No especificado'}</p>
+        <p><strong>Email:</strong> ${sesionData.candidato_email || 'No especificado'}</p>
+        <p><strong>Chatbot:</strong> ${sesionData.chatbot_nombre || 'Evaluación'}</p>
+        <p><strong>Fecha:</strong> ${new Date(sesionData.fecha_fin || sesionData.fecha_completado).toLocaleString('es-ES', {
+          year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+        })}</p>
       </div>
 
-      <!-- RESULTADO -->
-      <div class="section">
-        <div class="section-title">🎯 Resultado de la Evaluación</div>
-        <div style="text-align: center;">
-          <div class="resultado-badge">${textoResultado}</div>
-        </div>
-        <div class="info-grid">
-          <div class="info-label">Puntaje obtenido:</div>
-          <div class="info-value"><strong>${sesionData.puntaje_total || 0} / ${sesionData.puntaje_maximo || 100}</strong></div>
-
-          <div class="info-label">Porcentaje:</div>
-          <div class="info-value"><strong>${sesionData.porcentaje_aprobacion || 0}%</strong></div>
-
-          <div class="info-label">Umbral requerido:</div>
-          <div class="info-value">${sesionData.umbral_aprobacion || 70}%</div>
-        </div>
-      </div>
-
-      <!-- CONVERSACIÓN COMPLETA -->
-      <div class="section">
-        <div class="section-title">💬 Conversación Completa</div>
-        ${generarHtmlConversacion(sesionData.mensajes)}
-      </div>
-
-      <!-- EVALUACIONES DESGLOSADAS -->
-      <div class="section">
-        <div class="section-title">📊 Evaluaciones Desglosadas</div>
-        ${generarHtmlEvaluaciones(sesionData.evaluaciones)}
-      </div>
-
-      <!-- PDF ADJUNTO -->
-      <div class="adjunto-info">
-        <strong>📎 PDF Adjunto:</strong> Se ha adjuntado un reporte completo en formato PDF con toda la información de la evaluación.
+      <div class="pdf-info">
+        <div class="pdf-icon">📄</div>
+        <h3>Reporte Completo Adjunto</h3>
+        <p>Revisa el PDF adjunto para ver el detalle completo de la evaluación:</p>
+        <p>✓ Todas las preguntas y respuestas</p>
+        <p>✓ Evaluaciones desglosadas</p>
+        <p>✓ Puntajes y retroalimentación</p>
       </div>
 
     </div>
 
-    <!-- FOOTER -->
     <div class="footer">
       <p>Este es un correo automático generado por <strong>ChatBot 3IT</strong></p>
-      <p>Fecha de envío: ${new Date().toLocaleString('es-ES')}</p>
+      <p>${new Date().toLocaleString('es-ES')}</p>
     </div>
 
   </div>
@@ -532,95 +375,6 @@ const notificarReclutador = async (reclutadorEmail, sesionData) => {
     throw error;
   }
 };
-
-/**
- * Generar HTML de la conversación completa
- */
-function generarHtmlConversacion(mensajes) {
-  if (!mensajes || mensajes.length === 0) {
-    return '<p style="color: #999; font-style: italic;">No hay mensajes registrados.</p>';
-  }
-
-  let html = '';
-
-  mensajes.forEach((mensaje) => {
-    const tipo = mensaje.tipo_mensaje;
-    const hora = new Date(mensaje.fecha_creacion).toLocaleTimeString('es-ES', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    });
-
-    const etiquetas = {
-      'sistema': 'Sistema',
-      'pregunta': 'Pregunta',
-      'respuesta': 'Respuesta del candidato'
-    };
-
-    html += `
-      <div class="mensaje ${tipo}">
-        <div class="mensaje-header">[${hora}] ${etiquetas[tipo] || tipo}</div>
-        <div class="mensaje-contenido">${mensaje.contenido || ''}</div>
-        ${mensaje.evaluacion && tipo === 'respuesta' ? `
-          <div style="margin-top: 10px; font-size: 12px; color: #666;">
-            → Evaluación: <span class="${mensaje.evaluacion.es_correcta ? 'correcta' : 'incorrecta'}">
-              ${mensaje.evaluacion.es_correcta ? '✓ Correcta' : '✗ Incorrecta'}
-            </span> | Puntaje: ${mensaje.evaluacion.puntaje || 0}/100
-          </div>
-        ` : ''}
-      </div>
-    `;
-  });
-
-  return html;
-}
-
-/**
- * Generar HTML de las evaluaciones desglosadas
- */
-function generarHtmlEvaluaciones(evaluaciones) {
-  if (!evaluaciones || evaluaciones.length === 0) {
-    return '<p style="color: #999; font-style: italic;">No hay evaluaciones registradas.</p>';
-  }
-
-  let html = '';
-
-  evaluaciones.forEach((evaluacion, index) => {
-    const esCorrecta = evaluacion.es_correcta;
-
-    html += `
-      <div class="evaluacion-item">
-        <div class="evaluacion-pregunta">Pregunta ${index + 1}: ${evaluacion.pregunta_texto || 'N/A'}</div>
-        <div class="evaluacion-respuesta">"${evaluacion.respuesta_texto || 'N/A'}"</div>
-
-        <div class="evaluacion-resultado">
-          <div class="evaluacion-campo">
-            <strong>Resultado:</strong> <span class="${esCorrecta ? 'correcta' : 'incorrecta'}">
-              ${esCorrecta ? '✓ Correcta' : '✗ Incorrecta'}
-            </span>
-          </div>
-          <div class="evaluacion-campo">
-            <strong>Puntaje:</strong> ${evaluacion.puntaje || 0}/100
-          </div>
-          <div class="evaluacion-campo">
-            <strong>Peso:</strong> ${evaluacion.peso || 1}
-          </div>
-          <div class="evaluacion-campo">
-            <strong>Método:</strong> ${evaluacion.metodo_evaluacion || 'N/A'}
-          </div>
-        </div>
-
-        ${evaluacion.retroalimentacion ? `
-          <div style="margin-top: 15px; padding: 10px; background-color: #f8f9fa; border-radius: 4px; font-size: 13px;">
-            <strong>Retroalimentación:</strong> ${evaluacion.retroalimentacion}
-          </div>
-        ` : ''}
-      </div>
-    `;
-  });
-
-  return html;
-}
 
 /**
  * Enviar recordatorio de evaluación pendiente
@@ -702,8 +456,7 @@ const enviarEmailPrueba = async (destinatario) => {
 module.exports = {
   enviarEmail,
   enviarInvitacion,
-  enviarAprobado,
-  enviarRechazado,
+  // enviarAprobado y enviarRechazado ELIMINADOS - El candidato NO recibe emails
   notificarReclutador,
   enviarRecordatorio,
   verificarConfiguracion,

@@ -30,50 +30,77 @@ class ReglaFijaEvaluator {
         ? JSON.parse(pregunta.regla)
         : pregunta.regla;
 
-      // Determinar qué validador usar según el tipo de regla
+      // Determinar qué validador usar según el tipo de campo de la pregunta
+      // Esto es más confiable que el tipo de regla
       let resultado;
+      const tipoCampo = pregunta.tipo_campo;
 
-      switch (regla.tipo) {
-        case 'numero':
-        case 'rango':
-          resultado = validators.RangoValidator.validar(regla, respuesta);
-          break;
-
-        case 'keywords':
-        case 'palabras_clave':
+      // Priorizar el tipo de campo sobre el tipo de regla
+      if (tipoCampo === 'numero') {
+        // Para preguntas numéricas, usar RangoValidator
+        resultado = validators.RangoValidator.validar(regla, respuesta);
+      } else if (tipoCampo === 'si_no') {
+        // Para preguntas sí/no, usar IgualValidator
+        resultado = validators.IgualValidator.validar(regla, respuesta);
+      } else if (tipoCampo === 'texto' || tipoCampo === 'texto_corto' || tipoCampo === 'texto_largo') {
+        // Para preguntas de texto, verificar si tiene keywords
+        if (regla.keywords && Array.isArray(regla.keywords) && regla.keywords.length > 0) {
           resultado = validators.KeywordValidator.validar(regla, respuesta);
-          break;
-
-        case 'opcion':
-        case 'opciones':
-          resultado = validators.OpcionValidator.validar(regla, respuesta);
-          break;
-
-        case 'formato':
-          resultado = validators.FormatoValidator.validar(regla, respuesta);
-          break;
-
-        case 'longitud':
+        } else {
+          // Si no tiene keywords, usar validación de longitud o formato
           resultado = validators.LongitudValidator.validar(regla, respuesta);
-          break;
+        }
+      } else if (tipoCampo === 'opcion_unica' || tipoCampo === 'opcion_multiple') {
+        resultado = validators.OpcionValidator.validar(regla, respuesta);
+      } else if (tipoCampo === 'email') {
+        resultado = validators.FormatoValidator.validar({ formato: 'email' }, respuesta);
+      } else if (tipoCampo === 'telefono') {
+        resultado = validators.FormatoValidator.validar({ formato: 'telefono' }, respuesta);
+      } else {
+        // Fallback: usar el tipo de regla
+        switch (regla.tipo) {
+          case 'numero':
+          case 'rango':
+            resultado = validators.RangoValidator.validar(regla, respuesta);
+            break;
 
-        case 'igual_a':
-        case 'igualdad':
-          resultado = validators.IgualValidator.validar(regla, respuesta);
-          break;
+          case 'keywords':
+          case 'palabras_clave':
+            resultado = validators.KeywordValidator.validar(regla, respuesta);
+            break;
 
-        case 'contiene':
-          resultado = validators.ContieneValidator.validar(regla, respuesta);
-          break;
+          case 'opcion':
+          case 'opciones':
+            resultado = validators.OpcionValidator.validar(regla, respuesta);
+            break;
 
-        default:
-          return {
-            cumple: false,
-            puntaje: 0,
-            razon: `Tipo de regla desconocido: ${regla.tipo}`,
-            metodo_evaluacion: 'regla_fija',
-            detalles: { error: 'Tipo de regla no soportado' }
-          };
+          case 'formato':
+            resultado = validators.FormatoValidator.validar(regla, respuesta);
+            break;
+
+          case 'longitud':
+            resultado = validators.LongitudValidator.validar(regla, respuesta);
+            break;
+
+          case 'igual':
+          case 'igual_a':
+          case 'igualdad':
+            resultado = validators.IgualValidator.validar(regla, respuesta);
+            break;
+
+          case 'contiene':
+            resultado = validators.ContieneValidator.validar(regla, respuesta);
+            break;
+
+          default:
+            return {
+              cumple: false,
+              puntaje: 0,
+              razon: `Tipo de regla desconocido: ${regla.tipo}`,
+              metodo_evaluacion: 'regla_fija',
+              detalles: { error: 'Tipo de regla no soportado' }
+            };
+        }
       }
 
       // Agregar información adicional

@@ -8,7 +8,32 @@
     "dev": "nodemon src/server.js",
     "test:db": "node src/config/testConnection.js",
     "db:schema": "node database/runSchema.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:unit": "jest --testPathPattern=__tests__",
+    "test:integration": "jest --testPathPattern=tests/integration"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "coverageDirectory": "coverage",
+    "collectCoverageFrom": [
+      "src/**/*.js",
+      "!src/**/*.test.js",
+      "!src/server.js"
+    ],
+    "testMatch": [
+      "**/__tests__/**/*.test.js",
+      "**/tests/**/*.test.js"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 70,
+        "functions": 70,
+        "lines": 70,
+        "statements": 70
+      }
+    }
   },
   "keywords": [],
   "author": "",
@@ -22,6 +47,9 @@
     "pdfkit": "^0.17.2"
   },
   "devDependencies": {
-    "nodemon": "^3.1.11"
+    "@types/jest": "^30.0.0",
+    "jest": "^30.2.0",
+    "nodemon": "^3.1.11",
+    "supertest": "^7.1.4"
   }
 }

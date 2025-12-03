@@ -46,9 +46,12 @@ class EvaluacionService {
       };
 
       // 5. Guardar evaluación en BD
-      const evaluacionGuardada = await evaluacionesRepository.crear(datosEvaluacion);
+      const evaluacionId = await evaluacionesRepository.crear(datosEvaluacion);
+      
+      // 6. Obtener la evaluación completa
+      const evaluacionGuardada = await evaluacionesRepository.obtenerPorId(evaluacionId);
 
-      console.log(`✅ Evaluación guardada - ID: ${evaluacionGuardada.id}, Cumple: ${evaluacionGuardada.cumple}, Puntaje: ${evaluacionGuardada.puntaje}`);
+      console.log(`✅ Evaluación guardada - ID: ${evaluacionGuardada?.id}, Cumple: ${evaluacionGuardada?.cumple}, Puntaje: ${evaluacionGuardada?.puntaje}`);
 
       return {
         success: true,
@@ -234,18 +237,30 @@ class EvaluacionService {
    */
   static async validarFinalizacion(sesionId) {
     try {
-      // Obtener estadísticas
-      const estadisticas = await evaluacionesRepository.estadisticasPorSesion(sesionId);
+      // Obtener todas las evaluaciones
+      const evaluaciones = await evaluacionesRepository.obtenerPorSesion(sesionId);
+      
+      if (!evaluaciones || evaluaciones.length === 0) {
+        return {
+          puede_finalizar: false,
+          razon: 'No hay evaluaciones registradas',
+          estadisticas: { total_evaluaciones: 0, preguntas_pendientes: 0 }
+        };
+      }
 
-      // Verificar que todas las preguntas estén evaluadas
-      const todasEvaluadas = estadisticas.preguntas_pendientes === 0;
+      // Verificar que todas las evaluaciones tengan un resultado (cumple no sea null)
+      const evaluacionesPendientes = evaluaciones.filter(e => e.cumple === null);
+      const todasEvaluadas = evaluacionesPendientes.length === 0;
 
       return {
         puede_finalizar: todasEvaluadas,
         razon: todasEvaluadas
           ? 'Todas las preguntas han sido evaluadas'
-          : `Faltan ${estadisticas.preguntas_pendientes} pregunta(s) por evaluar`,
-        estadisticas
+          : `Faltan ${evaluacionesPendientes.length} pregunta(s) por evaluar`,
+        estadisticas: {
+          total_evaluaciones: evaluaciones.length,
+          preguntas_pendientes: evaluacionesPendientes.length
+        }
       };
 
     } catch (error) {

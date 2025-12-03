@@ -288,69 +288,13 @@
             </InputComponent>
           </div>
 
-          <!-- SMTP Config (Acordeón) -->
-          <details data-eit-mb="5">
-            <summary
-              data-eit-p="3"
-              data-eit-border="all"
-              data-eit-border-radius="x3"
-              style="cursor: pointer;"
-            >
-              <strong>⚙️ Configuración SMTP (Opcional)</strong>
-            </summary>
-
-            <div data-eit-mt="3" data-eit-p="4" data-eit-border="all" data-eit-border-radius="x3">
-              <div data-eit-mb="3">
-                <InputComponent
-                  inputType="text"
-                  floatLabel="Host SMTP"
-                  :input="formData.smtp_config?.host || ''"
-                  maxLength="200"
-                  @emitValue="formData.smtp_config && (formData.smtp_config.host = $event)"
-                />
-              </div>
-
-              <div data-eit-mb="3">
-                <InputComponent
-                  inputType="number"
-                  floatLabel="Puerto SMTP"
-                  :input="String(formData.smtp_config?.port || 587)"
-                  maxLength="5"
-                  @emitValue="formData.smtp_config && (formData.smtp_config.port = Number($event))"
-                />
-              </div>
-
-              <div data-eit-mb="3">
-                <InputComponent
-                  inputType="text"
-                  floatLabel="Usuario SMTP"
-                  :input="formData.smtp_config?.user || ''"
-                  maxLength="200"
-                  @emitValue="formData.smtp_config && (formData.smtp_config.user = $event)"
-                />
-              </div>
-
-              <div data-eit-mb="3">
-                <InputComponent
-                  inputType="password"
-                  floatLabel="Contraseña SMTP"
-                  :input="formData.smtp_config?.pass || ''"
-                  maxLength="200"
-                  @emitValue="formData.smtp_config && (formData.smtp_config.pass = $event)"
-                />
-              </div>
-
-              <div data-eit-mb="0">
-                <InputComponent
-                  inputType="text"
-                  floatLabel="Nombre del remitente"
-                  :input="formData.smtp_config?.from_name || ''"
-                  maxLength="200"
-                  @emitValue="formData.smtp_config && (formData.smtp_config.from_name = $event)"
-                />
-              </div>
-            </div>
-          </details>
+          <!-- Info sobre emails -->
+          <AlertComponent
+            data-eit-variant="info"
+            data-eit-mb="4"
+            icon="fa-solid fa-info-circle"
+            message="Los emails de invitación se enviarán automáticamente desde el sistema. Solo necesitas configurar tu email para recibir los resultados."
+          />
 
         </div>
       </template>
@@ -549,6 +493,8 @@ function eliminarPregunta(index: number) {
     })
   }
 }
+
+
 
 // Guardar chatbot
 async function guardarChatbot() {

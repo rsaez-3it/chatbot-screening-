@@ -68,6 +68,26 @@ class RangoValidator {
       };
     }
 
+    // Solo min (sin max)
+    if (regla.min !== undefined && regla.max === undefined) {
+      const cumple = numero >= regla.min;
+      return {
+        cumple,
+        razon: cumple ? `Número ${numero} es mayor o igual a ${regla.min}` : `Número ${numero} es menor a ${regla.min}`,
+        puntaje: cumple ? 100 : 0
+      };
+    }
+
+    // Solo max (sin min)
+    if (regla.max !== undefined && regla.min === undefined) {
+      const cumple = numero <= regla.max;
+      return {
+        cumple,
+        razon: cumple ? `Número ${numero} es menor o igual a ${regla.max}` : `Número ${numero} es mayor a ${regla.max}`,
+        puntaje: cumple ? 100 : 0
+      };
+    }
+
     return {
       cumple: false,
       razon: 'Regla de rango no válida',
@@ -270,17 +290,28 @@ class LongitudValidator {
  */
 class IgualValidator {
   /**
-   * @param {Object} regla - { valor: 'si' }
+   * @param {Object} regla - { valor: 'si' } o { respuesta_correcta: 'si' }
    * @param {string} respuesta - Respuesta del candidato
    */
   static validar(regla, respuesta) {
-    const cumple = respuesta.toString().toLowerCase() === regla.valor.toString().toLowerCase();
+    // Soportar tanto 'valor' como 'respuesta_correcta'
+    const valorEsperado = regla.valor || regla.respuesta_correcta;
+    
+    if (!valorEsperado) {
+      return {
+        cumple: false,
+        razon: 'No se especificó valor esperado en la regla',
+        puntaje: 0
+      };
+    }
+
+    const cumple = respuesta.toString().toLowerCase() === valorEsperado.toString().toLowerCase();
 
     return {
       cumple,
       razon: cumple
         ? `Respuesta correcta: "${respuesta}"`
-        : `Respuesta incorrecta. Esperado: "${regla.valor}"`,
+        : `Respuesta incorrecta. Esperado: "${valorEsperado}"`,
       puntaje: cumple ? 100 : 0
     };
   }

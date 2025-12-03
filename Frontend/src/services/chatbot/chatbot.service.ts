@@ -59,5 +59,24 @@ export const chatbotService = {
     const url = filtros ? `/sesiones?${params}` : '/sesiones'
     const response = await axiosInstance.get(url)
     return response.data.data
+  },
+
+  /**
+   * Enviar invitaciones por email
+   * @param id - ID del chatbot
+   * @param emails - Array de emails a invitar
+   */
+  async enviarInvitaciones(id: number, emails: string[]) {
+    const response = await axiosInstance.post(`/config/${id}/invitar`, { emails })
+    return response.data
+  },
+
+  /**
+   * Verificar configuración SMTP
+   * @param id - ID del chatbot
+   */
+  async verificarSMTP(id: number) {
+    const response = await axiosInstance.post(`/config/${id}/verificar-smtp`)
+    return response.data
   }
 }

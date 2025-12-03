@@ -7,6 +7,7 @@ const express = require('express');
 const router = express.Router();
 const configController = require('../controllers/configController');
 const sesionController = require('../controllers/sesionController');
+const invitacionController = require('../controllers/invitacionController');
 
 // ============================================================================
 // RUTAS DE CONFIGURACIÓN
@@ -102,5 +103,22 @@ router.get('/:configId/sesiones', sesionController.obtenerPorConfig);
  * Obtener estadísticas de sesiones de un chatbot
  */
 router.get('/:configId/sesiones/estadisticas', sesionController.obtenerEstadisticas);
+
+// ============================================================================
+// RUTAS DE INVITACIONES
+// ============================================================================
+
+/**
+ * POST /api/config/:id/invitar
+ * Enviar invitaciones por email a candidatos
+ * Body: { "emails": ["email1@example.com", "email2@example.com"] }
+ */
+router.post('/:id/invitar', invitacionController.enviarInvitaciones);
+
+/**
+ * POST /api/config/:id/verificar-smtp
+ * Verificar configuración SMTP del chatbot
+ */
+router.post('/:id/verificar-smtp', invitacionController.verificarSMTP);
 
 module.exports = router;

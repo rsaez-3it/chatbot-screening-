@@ -289,6 +289,12 @@ const finalizarEvaluacion = async (token, umbralAprobacion = null) => {
       throw new Error('Sesión no encontrada');
     }
 
+    // 1.5. Verificar que no esté ya completada (evitar duplicados)
+    if (sesion.estado === 'completado') {
+      console.log(`⚠️  La sesión ${token} ya está completada. No se enviarán emails duplicados.`);
+      return sesion;
+    }
+
     // 2. Validar que se puede finalizar
     const validacion = await evaluacionService.validarFinalizacion(sesion.id);
 
@@ -315,31 +321,25 @@ const finalizarEvaluacion = async (token, umbralAprobacion = null) => {
     const sesionFinalizada = await sesionesRepository.obtenerSesionCompleta(token);
 
     console.log(`✅ Evaluación finalizada - Resultado: ${resultado.resultado} (${resultado.porcentaje}%)`);
+    console.log(`📧 Email reclutador configurado: ${sesionFinalizada.email_reclutador || 'NO CONFIGURADO'}`);
 
     // 📧 ENVIAR EMAILS AUTOMÁTICOS
-    // 7. Enviar email al candidato (aprobado o rechazado)
-    if (sesionFinalizada.candidato_email) {
-      try {
-        if (resultado.resultado === 'aprobado') {
-          await emailService.enviarAprobado(sesionFinalizada.candidato_email, sesionFinalizada);
-          console.log(`✅ Email de aprobación enviado a ${sesionFinalizada.candidato_email}`);
-        } else {
-          await emailService.enviarRechazado(sesionFinalizada.candidato_email, sesionFinalizada);
-          console.log(`✅ Email de rechazo enviado a ${sesionFinalizada.candidato_email}`);
-        }
-      } catch (emailError) {
-        console.warn(`⚠️  Error al enviar email al candidato: ${emailError.message}`);
-      }
-    }
+    // 7. NO enviar email al candidato (solo el reclutador recibe notificación)
+    // El candidato ya vio el mensaje de finalización en el chatbot
+    console.log(`ℹ️  No se envía email al candidato (${sesionFinalizada.candidato_email}) - Solo notificación al reclutador`);
 
     // 8. Notificar al reclutador (si está configurado) con TODA LA INFORMACIÓN
     if (sesionFinalizada.email_reclutador) {
       try {
+        console.log(`📧 Preparando notificación para reclutador: ${sesionFinalizada.email_reclutador}`);
+        
         // Obtener TODOS los mensajes de la conversación
         const mensajes = await mensajesRepository.obtenerPorSesion(sesion.id);
+        console.log(`📝 Mensajes obtenidos: ${mensajes.length}`);
 
         // Obtener TODAS las evaluaciones con detalles
         const evaluacionesRaw = await evaluacionesRepository.obtenerPorSesion(sesion.id);
+        console.log(`📊 Evaluaciones obtenidas: ${evaluacionesRaw.length}`);
 
         // Enriquecer evaluaciones con texto de respuesta y mapear campos
         const evaluaciones = evaluacionesRaw.map(evaluacion => {
@@ -349,18 +349,29 @@ const finalizarEvaluacion = async (token, umbralAprobacion = null) => {
           );
 
           return {
-            pregunta_texto: evaluacion.pregunta,
-            respuesta_texto: mensajeRespuesta?.contenido || 'N/A',
+            pregunta_texto: evaluacion.pregunta || 'Pregunta sin texto',
+            respuesta_texto: mensajeRespuesta?.contenido || 'Sin respuesta',
             es_correcta: evaluacion.cumple === 1 || evaluacion.cumple === true,
             puntaje: parseFloat(evaluacion.puntaje) || 0,
             peso: parseFloat(evaluacion.peso) || 1,
-            metodo_evaluacion: evaluacion.metodo_evaluacion,
-            retroalimentacion: evaluacion.razon,
+            metodo_evaluacion: evaluacion.metodo_evaluacion || 'desconocido',
+            retroalimentacion: evaluacion.razon || 'Sin retroalimentación',
             detalle_evaluacion: evaluacion.detalles ?
-              (typeof evaluacion.detalles === 'string' ? JSON.parse(evaluacion.detalles) : evaluacion.detalles)
+              (typeof evaluacion.detalles === 'string' ? 
+                (() => {
+                  try {
+                    return JSON.parse(evaluacion.detalles);
+                  } catch (e) {
+                    console.warn('⚠️  Error al parsear detalles de evaluación:', e);
+                    return null;
+                  }
+                })()
+                : evaluacion.detalles)
               : null
           };
         });
+        
+        console.log(`✅ Evaluaciones procesadas: ${evaluaciones.length}`);
 
         // Preparar datos COMPLETOS para el email
         const sesionDataCompleta = {
@@ -376,10 +387,13 @@ const finalizarEvaluacion = async (token, umbralAprobacion = null) => {
           umbral_aprobacion: umbral
         };
 
+        console.log('📧 Enviando notificación al reclutador...');
         await emailService.notificarReclutador(sesionFinalizada.email_reclutador, sesionDataCompleta);
         console.log(`✅ Notificación completa enviada al reclutador: ${sesionFinalizada.email_reclutador}`);
       } catch (emailError) {
-        console.warn(`⚠️  Error al notificar al reclutador: ${emailError.message}`);
+        console.error(`❌ Error al notificar al reclutador: ${emailError.message}`);
+        console.error('Stack trace:', emailError.stack);
+        // No lanzar el error, solo registrarlo - la sesión ya está finalizada
       }
     }
 

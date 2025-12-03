@@ -348,7 +348,8 @@ const obtenerSesionCompleta = async (token) => {
         c.color_fondo,
         c.mensaje_bienvenida,
         c.mensaje_aprobado,
-        c.mensaje_rechazado
+        c.mensaje_rechazado,
+        c.email_reclutador
       FROM cb_sesiones s
       INNER JOIN cb_config c ON s.config_id = c.id
       WHERE s.token = ?

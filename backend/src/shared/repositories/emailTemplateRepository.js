@@ -15,7 +15,7 @@ const obtenerTodas = async (soloActivas = false) => {
     let sql = 'SELECT * FROM cb_email_templates';
 
     if (soloActivas) {
-      sql += ' WHERE activo = 1';
+      sql += ' WHERE activa = 1';
     }
 
     sql += ' ORDER BY codigo ASC';
@@ -47,7 +47,7 @@ const obtenerPorId = async (id) => {
  */
 const obtenerPorCodigo = async (codigo) => {
   try {
-    const sql = 'SELECT * FROM cb_email_templates WHERE codigo = ? AND activo = 1';
+    const sql = 'SELECT * FROM cb_email_templates WHERE codigo = ? AND activa = 1';
     return await findOne(sql, [codigo]);
   } catch (error) {
     throw new Error(`Error al obtener plantilla por código: ${error.message}`);
@@ -69,7 +69,7 @@ const crear = async (datos) => {
         cuerpo,
         variables,
         descripcion,
-        activo
+        activa
       ) VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
 
@@ -80,7 +80,7 @@ const crear = async (datos) => {
       datos.cuerpo,
       datos.variables ? JSON.stringify(datos.variables) : null,
       datos.descripcion || null,
-      datos.activo !== undefined ? datos.activo : 1
+      datos.activa !== undefined ? datos.activa : 1
     ];
 
     return await insert(sql, params);
@@ -125,9 +125,9 @@ const actualizar = async (id, datos) => {
       valores.push(datos.descripcion);
     }
 
-    if (datos.activo !== undefined) {
-      campos.push('activo = ?');
-      valores.push(datos.activo);
+    if (datos.activa !== undefined) {
+      campos.push('activa = ?');
+      valores.push(datos.activa);
     }
 
     if (campos.length === 0) {
