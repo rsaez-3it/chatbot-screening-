@@ -5,7 +5,7 @@
 
 const configRepository = require('../repositories/configRepository');
 const sesionesRepository = require('../repositories/sesionesRepository');
-const emailService = require('../../../services/emailService');
+const emailService = require('../../../shared/services/emailService');
 
 /**
  * POST /api/config/:id/invitar
@@ -102,14 +102,30 @@ const enviarInvitaciones = async (req, res, next) => {
         const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
         const linkSesion = `${baseUrl}/chat/${token}`;
 
-        // Crear objeto sesión para el email
+        // Crear objeto sesión completo para el email
         const sesionParaEmail = {
           candidato_nombre: candidato.nombre,
-          candidato_email: candidato.email
+          candidato_email: candidato.email,
+          candidato_telefono: candidato.telefono,
+          token: token,
+          fecha_expiracion: fechaExpiracion
         };
 
-        // Enviar email (usa configuración del .env)
-        const resultado = await emailService.enviarInvitacion(candidato.email, chatbot, linkSesion);
+        // DEBUG: Log antes de enviar email
+        console.log('🔥 INVITACION CONTROLLER - Enviando email a:', candidato.email);
+        console.log('🔥 Link:', linkSesion);
+        console.log('🔥 Chatbot:', chatbot.nombre);
+        console.log('🔥 Sesion:', sesionParaEmail);
+
+        // Enviar email con los parámetros correctos
+        const resultado = await emailService.enviarInvitacion(
+          candidato.email,
+          linkSesion,
+          chatbot,
+          sesionParaEmail
+        );
+        
+        console.log('✅ Email enviado, messageId:', resultado.messageId);
 
         resultados.push({
           email: candidato.email,

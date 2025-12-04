@@ -3,6 +3,8 @@
  * Usa nodemailer y plantillas de cb_email_templates
  */
 
+console.log('🚀 Cargando emailService.js - VERSIÓN NUEVA');
+
 const nodemailer = require('nodemailer');
 const emailTemplateRepository = require('../repositories/emailTemplateRepository');
 const pdfService = require('./pdfService');
@@ -152,22 +154,100 @@ const enviarEmail = async (destinatario, asunto, cuerpoHtml, cuerpoTexto = null,
  */
 const enviarInvitacion = async (candidatoEmail, chatbotUrl, config, sesion) => {
   try {
-    console.log(`📧 Enviando invitación a ${candidatoEmail}`);
+    console.log('='.repeat(80));
+    console.log('🔍 DEBUG enviarInvitacion');
+    console.log('📧 Email:', candidatoEmail);
+    console.log('🔗 URL:', chatbotUrl);
+    console.log('⚙️  Config:', config ? config.nombre : 'undefined');
+    console.log('👤 Sesion:', sesion ? sesion.candidato_nombre : 'undefined');
+    console.log('='.repeat(80));
 
-    const plantilla = await obtenerPlantilla('invitacion');
+    const fechaExpiracion = new Date(sesion.fecha_expiracion).toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
 
-    const variables = {
-      nombre_candidato: sesion.candidato_nombre || 'Candidato',
-      nombre_chatbot: config.nombre,
-      nombre_empresa: config.nombre_empresa || 'Nuestra empresa',
-      chatbot_url: chatbotUrl,
-      fecha_expiracion: new Date(sesion.fecha_expiracion).toLocaleDateString('es-ES'),
-      duracion_dias: config.duracion_dias || 7,
-      descripcion: config.descripcion || ''
-    };
+    const asunto = `Tu Evaluación Profesional está Lista`;
 
-    const asunto = renderizarPlantilla(plantilla.asunto, variables);
-    const cuerpo = renderizarPlantilla(plantilla.cuerpo, variables);
+    const cuerpo = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #ffffff;">
+  <div style="max-width: 600px; margin: 20px auto; background-color: #ffffff; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+    
+    <!-- Logo -->
+    <div style="background-color: #ffffff; text-align: center; padding: 30px 20px 10px;">
+      <img src="https://static.wixstatic.com/media/3ec04d_1f1f0d021fce4472a254b66aca24f876~mv2.png" alt="3IT" style="max-width: 100px; height: auto;">
+    </div>
+
+    <!-- Header -->
+    <div style="background: linear-gradient(135deg, #1e88e5 0%, #00acc1 100%); padding: 30px; text-align: center; border-radius: 20px; margin: 0 20px 20px 20px;">
+      <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: bold;">EVALUACIÓN PROFESIONAL</h1>
+    </div>
+
+    <!-- Badge -->
+    <div style="text-align: center; margin: 20px 0;">
+      <div style="display: inline-block; background-color: #ffffff; padding: 12px 25px; border-radius: 25px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        <span style="font-size: 18px; margin-right: 5px;">🎯</span>
+        <span style="font-size: 16px; font-weight: bold; color: #333333;">Tu Evaluación está Lista</span>
+      </div>
+    </div>
+
+    <!-- Contenido -->
+    <div style="padding: 20px 30px;">
+      <p style="color: #333333; font-size: 15px; margin: 0 0 10px 0;">Hola,</p>
+      <p style="color: #666666; font-size: 14px; line-height: 1.6; margin: 0 0 20px 0;">
+        Has sido invitado a completar la evaluación: <strong>"${config.nombre}"</strong>
+      </p>
+
+      <!-- Info box -->
+      <div style="background-color: #f5f5f5; border-radius: 8px; padding: 20px; margin: 0 0 20px 0;">
+        <h3 style="color: #333333; font-size: 15px; margin: 0 0 12px 0;">📋 Información de la Entrevista</h3>
+        <p style="color: #666666; font-size: 13px; margin: 5px 0;">📅 <strong>Fecha límite:</strong> ${fechaExpiracion}</p>
+        <p style="color: #666666; font-size: 13px; margin: 5px 0;">⏱️ <strong>Duración estimada:</strong> 15-20 minutos</p>
+        <p style="color: #666666; font-size: 13px; margin: 5px 0;">❓ <strong>Preguntas:</strong> ${config.total_preguntas || 'Varias'}</p>
+        <p style="color: #666666; font-size: 13px; margin: 5px 0;">💻 <strong>Dispositivo:</strong> Computadora o móvil con cámara</p>
+      </div>
+
+      <!-- Botón -->
+      <div style="text-align: center; margin: 0 0 20px 0;">
+        <a href="${chatbotUrl}" style="display: inline-block; background: linear-gradient(135deg, #1e88e5 0%, #00acc1 100%); color: #ffffff; text-decoration: none; padding: 14px 35px; border-radius: 25px; font-size: 15px; font-weight: bold;">
+          Comenzar Evaluación
+        </a>
+      </div>
+
+      <!-- Token -->
+      <div style="background-color: #f5f5f5; border-radius: 8px; padding: 15px; margin: 0 0 20px 0;">
+        <p style="color: #666666; font-size: 12px; margin: 0 0 5px 0;">Token de acceso: <strong style="color: #333333;">${sesion.token.substring(0, 12)}...</strong></p>
+        <p style="color: #666666; font-size: 12px; margin: 0;">Enlace directo: <a href="${chatbotUrl}" style="color: #1e88e5; text-decoration: none;">${chatbotUrl}</a></p>
+      </div>
+
+      <!-- Consejos -->
+      <div style="border-left: 3px solid #1e88e5; padding-left: 15px; margin: 0 0 15px 0;">
+        <p style="color: #1e88e5; font-size: 14px; font-weight: bold; margin: 0 0 8px 0;">💡 Consejos para la entrevista:</p>
+        <ul style="color: #666666; font-size: 13px; margin: 0; padding-left: 20px; line-height: 1.6;">
+          <li>Busca un lugar tranquilo con buena iluminación</li>
+          <li>Prueba tu cámara y micrófono antes de comenzar</li>
+          <li>Responde con naturalidad y tómate tu tiempo</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div style="background-color: #f5f5f5; padding: 20px; text-align: center;">
+      <p style="color: #666666; font-size: 12px; margin: 0 0 5px 0;">Este email fue enviado por <strong>3IT</strong></p>
+      <p style="color: #999999; font-size: 11px; margin: 0;">Si tienes problemas técnicos, contacta a nuestro equipo de soporte.</p>
+    </div>
+
+  </div>
+</body>
+</html>
+    `;
 
     return await enviarEmail(candidatoEmail, asunto, cuerpo);
 
@@ -233,17 +313,29 @@ const notificarReclutador = async (reclutadorEmail, sesionData) => {
     }
     .container {
       max-width: 600px;
-      margin: 40px auto;
+      margin: 20px auto;
       background-color: #ffffff;
+      border: 1px solid #e0e0e0;
       border-radius: 8px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
       overflow: hidden;
     }
-    .header {
-      background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%);
-      color: #ffffff;
-      padding: 40px 30px;
+    .logo {
       text-align: center;
+      padding: 30px 20px 10px;
+      background-color: #ffffff;
+    }
+    .logo img {
+      max-width: 100px;
+      height: auto;
+    }
+    .header {
+      background: linear-gradient(135deg, #1e88e5 0%, #00acc1 100%);
+      color: #ffffff;
+      padding: 30px;
+      text-align: center;
+      border-radius: 20px;
+      margin: 0 20px 20px 20px;
     }
     .header h1 {
       margin: 0 0 10px 0;
@@ -317,6 +409,10 @@ const notificarReclutador = async (reclutadorEmail, sesionData) => {
 <body>
   <div class="container">
     
+    <div class="logo">
+      <img src="https://static.wixstatic.com/media/3ec04d_1f1f0d021fce4472a254b66aca24f876~mv2.png" alt="3IT Logo">
+    </div>
+
     <div class="header">
       <h1>ChatBot 3IT</h1>
       <p>Nueva Evaluación Completada</p>
