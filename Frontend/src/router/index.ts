@@ -15,6 +15,7 @@ import RolesListView from '@/views/roles/children/RolesListView.vue'
 import RolesFormView from '@/views/roles/children/RolesFormView.vue'
 import ChatbotFormView from '@/views/chatbot/ChatbotFormView.vue'
 import ChatbotListView from '@/views/chatbot/ChatbotListView.vue'
+import SesionesListView from '@/views/sesiones/SesionesListView.vue'
 import ChatView from '@/views/chat/ChatView.vue'
 
 const routes: RouteRecordRaw[] = [
@@ -215,6 +216,20 @@ const routes: RouteRecordRaw[] = [
       permissionType: 'canUpdate',
       requiresPermissions: false,
       module: 'Chatbots',
+      parent: ''
+    }
+  },
+  {
+    path: '/candidatos',
+    name: 'Candidatos',
+    component: SesionesListView,
+    meta: {
+      title: 'Candidatos',
+      layout: 'LayoutPrivateDefault',
+      requiresAuth: false,
+      permissionType: 'canRead',
+      requiresPermissions: false,
+      module: 'Candidatos',
       parent: ''
     }
   },

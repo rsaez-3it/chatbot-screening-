@@ -304,15 +304,23 @@ const actualizar = async (req, res, next) => {
 };
 
 /**
- * DELETE /api/sesiones/:token
- * Eliminar una sesión
+ * DELETE /api/sesiones/:idOrToken
+ * Eliminar una sesión por ID o token
  */
 const eliminar = async (req, res, next) => {
   try {
-    const { token } = req.params;
+    const { idOrToken } = req.params;
 
-    // Verificar que la sesión existe
-    const sesion = await sesionesRepository.obtenerPorToken(token);
+    let sesion;
+
+    // Si es numérico, buscar por ID
+    if (!isNaN(idOrToken)) {
+      sesion = await sesionesRepository.obtenerPorId(parseInt(idOrToken));
+    } else {
+      // Si no es numérico, buscar por token
+      sesion = await sesionesRepository.obtenerPorToken(idOrToken);
+    }
+
     if (!sesion) {
       return res.status(404).json({
         success: false,
@@ -415,9 +423,138 @@ const obtenerPreguntasPerfil = async (req, res, next) => {
   }
 };
 
+/**
+ * GET /api/sesiones
+ * Obtener todas las sesiones con paginación
+ */
+const obtenerTodas = async (req, res, next) => {
+  try {
+    const { page = 1, limit = 10, search = '', estado = '', config_id } = req.query;
+
+    // Construir filtros
+    const filtros = {};
+    if (estado) filtros.estado = estado;
+    if (config_id) filtros.config_id = parseInt(config_id);
+
+    // Obtener sesiones con información del chatbot
+    const sesiones = await sesionesRepository.obtenerTodasConChatbot(filtros);
+
+    // Filtrar por búsqueda si existe
+    let sesionesFiltradas = sesiones;
+    if (search) {
+      const searchLower = search.toLowerCase();
+      sesionesFiltradas = sesiones.filter(s => 
+        (s.candidato_nombre && s.candidato_nombre.toLowerCase().includes(searchLower)) ||
+        (s.candidato_email && s.candidato_email.toLowerCase().includes(searchLower)) ||
+        (s.chatbot_nombre && s.chatbot_nombre.toLowerCase().includes(searchLower))
+      );
+    }
+
+    // Paginación
+    const total = sesionesFiltradas.length;
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const offset = (pageNum - 1) * limitNum;
+    const sesionesPaginadas = sesionesFiltradas.slice(offset, offset + limitNum);
+
+    res.json({
+      success: true,
+      data: sesionesPaginadas,
+      meta: {
+        pagination: {
+          total,
+          page: pageNum - 1,
+          pageCount: Math.ceil(total / limitNum),
+          limit: limitNum
+        }
+      }
+    });
+
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * POST /api/sesiones/:id/reenviar
+ * Reenviar invitación a un candidato
+ */
+const reenviarInvitacion = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    // Obtener sesión
+    const sesion = await sesionesRepository.obtenerPorId(id);
+    if (!sesion) {
+      return res.status(404).json({
+        success: false,
+        message: 'Sesión no encontrada'
+      });
+    }
+
+    // Obtener chatbot
+    const chatbot = await configRepository.obtenerPorId(sesion.config_id);
+    if (!chatbot) {
+      return res.status(404).json({
+        success: false,
+        message: 'Chatbot no encontrado'
+      });
+    }
+
+    // Generar nuevo token
+    const nuevoToken = require('crypto').randomBytes(32).toString('hex');
+
+    // Calcular nueva fecha de expiración
+    const nuevaFechaExpiracion = new Date();
+    nuevaFechaExpiracion.setDate(nuevaFechaExpiracion.getDate() + chatbot.duracion_dias);
+
+    // Actualizar sesión
+    await sesionesRepository.actualizar(id, {
+      token: nuevoToken,
+      estado: 'pendiente',
+      fecha_expiracion: nuevaFechaExpiracion.toISOString().slice(0, 19).replace('T', ' ')
+    });
+
+    // Generar nuevo link
+    const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const nuevoLink = `${baseUrl}/chat/${nuevoToken}`;
+
+    // Enviar email
+    const emailService = require('../../../shared/services/emailService');
+    const sesionParaEmail = {
+      candidato_nombre: sesion.candidato_nombre,
+      candidato_email: sesion.candidato_email,
+      candidato_telefono: sesion.candidato_telefono,
+      token: nuevoToken,
+      fecha_expiracion: nuevaFechaExpiracion
+    };
+
+    await emailService.enviarInvitacion(
+      sesion.candidato_email,
+      nuevoLink,
+      chatbot,
+      sesionParaEmail
+    );
+
+    res.json({
+      success: true,
+      message: 'Invitación reenviada exitosamente',
+      data: {
+        nuevo_token: nuevoToken,
+        nueva_expiracion: nuevaFechaExpiracion
+      }
+    });
+
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   crear,
   obtenerPorToken,
+  obtenerTodas,
+  reenviarInvitacion,
   validar,
   iniciar,
   completar,

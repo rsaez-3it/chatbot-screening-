@@ -5,7 +5,7 @@ interface Badge {
 export default function useBadge() {
 
   function changeRecordStatus(item: boolean) {
-    if (item) return { name: 'Activo', className: 'eit-badge__outline--secondary', status: item } 
+    if (item) return { name: 'Activo', className: 'eit-badge__outline--secondary', status: item }
     if (!item) return { name: 'Inactivo', className: 'eit-badge__outline--gray', status: item }
     return { name: 'Sin estado', className: 'eit-badge__outline--gray', status: false }
   }
@@ -18,9 +18,20 @@ export default function useBadge() {
     if (!item) return { name: '', className: 'eit-font__size--x4 eit-color--text-soft', icon: 'fa-regular fa-star', status: item }
     return { name: '', className: 'eit-font__size--x4 eit-color--text-soft', status: false }
   }
-  return { 
+  function changeEstadoSesion(estado: string) {
+    const badges: Record<string, { name: string; className: string; estadoRaw: string }> = {
+      'pendiente': { name: 'Pendiente', className: 'eit-badge eit-badge__outline--warning', estadoRaw: estado },
+      'en_progreso': { name: 'En Progreso', className: 'eit-badge eit-badge__outline--info', estadoRaw: estado },
+      'completado': { name: 'Completado', className: 'eit-badge eit-badge__outline--success', estadoRaw: estado },
+      'expirado': { name: 'Expirado', className: 'eit-badge eit-badge__outline--danger', estadoRaw: estado },
+      'cancelado': { name: 'Cancelado', className: 'eit-badge eit-badge__outline--secondary', estadoRaw: estado }
+    }
+    return badges[estado] || { name: estado, className: 'eit-badge eit-badge__outline--gray', estadoRaw: estado }
+  }
+  return {
     changeRecordStatus,
     changeBadgeGray,
-    changeFavorite
+    changeFavorite,
+    changeEstadoSesion
   }
 }

@@ -13,11 +13,24 @@ const mensajeController = require('../controllers/mensajeController');
 // ============================================================================
 
 /**
+ * GET /api/sesiones
+ * Obtener todas las sesiones con paginación
+ * Query: page, limit, search, estado, config_id
+ */
+router.get('/', sesionController.obtenerTodas);
+
+/**
  * POST /api/sesiones
  * Crear una nueva sesión
  * Body: { config_id, candidato: { nombre, email, telefono } }
  */
 router.post('/', sesionController.crear);
+
+/**
+ * POST /api/sesiones/:id/reenviar
+ * Reenviar invitación a un candidato
+ */
+router.post('/:id/reenviar', sesionController.reenviarInvitacion);
 
 /**
  * GET /api/sesiones/:token
@@ -76,10 +89,10 @@ router.post('/:token/finalizar', sesionController.finalizarEvaluacion);
 router.put('/:token', sesionController.actualizar);
 
 /**
- * DELETE /api/sesiones/:token
- * Eliminar una sesión
+ * DELETE /api/sesiones/:idOrToken
+ * Eliminar una sesión por ID o token
  */
-router.delete('/:token', sesionController.eliminar);
+router.delete('/:idOrToken', sesionController.eliminar);
 
 /**
  * POST /api/sesiones/procesar-expiradas

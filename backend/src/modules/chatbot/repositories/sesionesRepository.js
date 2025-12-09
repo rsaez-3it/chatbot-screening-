@@ -360,12 +360,48 @@ const obtenerSesionCompleta = async (token) => {
   }
 };
 
+/**
+ * Obtener todas las sesiones con información del chatbot
+ * @param {Object} filtros - Filtros opcionales (estado, config_id)
+ * @returns {Promise<Array>} Lista de sesiones con datos del chatbot
+ */
+const obtenerTodasConChatbot = async (filtros = {}) => {
+  try {
+    let sql = `
+      SELECT
+        s.*,
+        c.nombre as chatbot_nombre
+      FROM cb_sesiones s
+      INNER JOIN cb_config c ON s.config_id = c.id
+      WHERE 1=1
+    `;
+    const params = [];
+
+    if (filtros.estado) {
+      sql += ' AND s.estado = ?';
+      params.push(filtros.estado);
+    }
+
+    if (filtros.config_id) {
+      sql += ' AND s.config_id = ?';
+      params.push(filtros.config_id);
+    }
+
+    sql += ' ORDER BY s.created_at DESC';
+
+    return await findAll(sql, params);
+  } catch (error) {
+    throw new Error(`Error al obtener sesiones con chatbot: ${error.message}`);
+  }
+};
+
 module.exports = {
   crear,
   obtenerPorId,
   obtenerPorToken,
   obtenerPorConfig,
   obtenerPorEmail,
+  obtenerTodasConChatbot,
   actualizar,
   marcarExpiradas,
   estaExpirada,
