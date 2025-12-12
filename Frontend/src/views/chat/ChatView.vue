@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import axios from 'axios'
 
@@ -18,6 +18,7 @@ const respuestaActual = ref('')
 const enviando = ref(false)
 const finalizado = ref(false)
 const error = ref('')
+const inputRef = ref(null)
 
 // Computed
 const preguntaActiva = computed(() => preguntas.value[preguntaActual.value])
@@ -170,10 +171,19 @@ async function enviarRespuesta() {
     
     // Limpiar input INMEDIATAMENTE
     respuestaActual.value = ''
-    
+
     // Pasar a la siguiente pregunta
     preguntaActual.value++
-    
+
+    // Restaurar el foco al input
+    await nextTick()
+    if (inputRef.value) {
+      const inputElement = inputRef.value.$el?.querySelector('input')
+      if (inputElement) {
+        inputElement.focus()
+      }
+    }
+
     // Si hay más preguntas, mostrarla
     if (preguntaActual.value < preguntas.value.length) {
       setTimeout(() => {
@@ -437,6 +447,7 @@ async function enviarRespuesta() {
         <div style="max-width: 900px; margin: 0 auto;" data-eit-display="flex" data-eit-gap="3" data-eit-align="end">
           <div style="flex: 1;">
             <InputComponent
+              ref="inputRef"
               :key="preguntaActual"
               inputType="text"
               floatLabel="Escribe tu respuesta aquí..."

@@ -34,12 +34,12 @@ const formKey = ref(0) // Key para forzar re-render del formulario
 function parsearLinea(linea: string): Candidato | null {
   const lineaTrim = linea.trim()
   if (!lineaTrim) return null
-  
+
   // Detectar si tiene TAB (Excel) o comas
-  const partes = lineaTrim.includes('\t') 
+  const partes = lineaTrim.includes('\t')
     ? lineaTrim.split('\t').map(p => p.trim()).filter(p => p)
     : lineaTrim.split(',').map(p => p.trim()).filter(p => p)
-  
+
   if (partes.length === 1) {
     // Solo email
     return { email: partes[0] }
@@ -50,7 +50,7 @@ function parsearLinea(linea: string): Candidato | null {
     // Nombre + Email + Teléfono
     return { nombre: partes[0], email: partes[1], telefono: partes[2] }
   }
-  
+
   return null
 }
 
@@ -157,7 +157,7 @@ Pedro Silva	pedro@example.com"
     </div>
 
     <!-- Contador de candidatos -->
-    <div 
+    <div
       v-if="totalCandidatos > 0"
       data-eit-display="flex"
       data-eit-gap="2"

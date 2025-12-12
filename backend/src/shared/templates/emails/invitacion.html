@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Invitación a Entrevista</title>
+    <title>¡Queremos conocerte!</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -70,34 +70,35 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🎯 ¡Has sido invitado!</h1>
+            <h1>💬 ¡Queremos conocerte!</h1>
         </div>
 
         <div class="content">
             <h2>Hola {{nombre_candidato}},</h2>
 
-            <p>¡Tenemos excelentes noticias! Has sido seleccionado para participar en nuestro proceso de evaluación.</p>
+            <p>Nos encantaría saber más de ti. <strong>{{nombre_empresa}}</strong> te invita a conversar con nuestro asistente virtual.</p>
 
-            <p><strong>{{nombre_empresa}}</strong> te invita a completar la siguiente entrevista virtual:</p>
+            <p>Es una conversación simple y rápida que nos ayudará a conocer tu perfil profesional.</p>
 
             <div class="info-box">
-                <strong>📋 Evaluación:</strong> {{nombre_chatbot}}<br>
-                <strong>📅 Válida hasta:</strong> {{fecha_expiracion}}<br>
-                <strong>⏱️ Duración:</strong> Tienes {{duracion_dias}} días para completarla
+                <strong>💬 Conversación:</strong> {{nombre_chatbot}}<br>
+                <strong>📅 Disponible hasta:</strong> {{fecha_expiracion}}<br>
+                <strong>⏱️ Tiempo disponible:</strong> Tienes {{duracion_dias}} días para completarla<br>
+                <strong>📱 Dispositivos:</strong> Funciona en computadora, tablet o celular
             </div>
 
-            <p>La entrevista es completamente digital y podrás realizarla en cualquier momento desde tu dispositivo favorito.</p>
+            <p>Es completamente digital y podrás realizarla cuando quieras, desde cualquier dispositivo con internet.</p>
 
             <center>
-                <a href="{{chatbot_url}}" class="button">Comenzar Entrevista</a>
+                <a href="{{chatbot_url}}" class="button">Comenzar Conversación</a>
             </center>
 
-            <p style="margin-top: 30px;"><strong>Consejos importantes:</strong></p>
+            <p style="margin-top: 30px;"><strong>Recomendaciones:</strong></p>
             <ul>
-                <li>Asegúrate de estar en un lugar tranquilo</li>
-                <li>Tómate tu tiempo para responder cada pregunta</li>
-                <li>Sé honesto y auténtico en tus respuestas</li>
-                <li>Puedes pausar y continuar más tarde si lo necesitas</li>
+                <li>Busca un momento tranquilo para responder</li>
+                <li>Lee cada pregunta con atención</li>
+                <li>Responde de forma honesta y natural</li>
+                <li>No te preocupes, no hay límite de tiempo por pregunta</li>
             </ul>
 
             <p>Si el botón no funciona, copia y pega esta URL en tu navegador:<br>
@@ -106,7 +107,7 @@
 
         <div class="footer">
             <p>Este es un correo automático, por favor no respondas a este mensaje.</p>
-            <p>© {{nombre_empresa}} - Sistema de Evaluación de Candidatos</p>
+            <p>© {{nombre_empresa}} - Asistente Virtual de Reclutamiento</p>
         </div>
     </div>
 </body>

@@ -10,7 +10,7 @@ const emailService = require('../../../shared/services/emailService');
 /**
  * POST /api/config/:id/invitar
  * Enviar invitación a uno o varios candidatos
- * Body: { 
+ * Body: {
  *   candidatos: [
  *     { email: 'email1@example.com', nombre: 'Juan Pérez', telefono: '+56912345678' },
  *     { email: 'email2@example.com', nombre: 'María González' }

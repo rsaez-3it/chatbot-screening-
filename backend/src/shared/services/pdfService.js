@@ -7,6 +7,11 @@
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
+const https = require('https');
+
+// Rutas a las fuentes Century Gothic
+const FONT_REGULAR = path.join(__dirname, '../fonts/centurygothic.ttf');
+const FONT_BOLD = path.join(__dirname, '../fonts/centurygothic_bold.ttf');
 
 /**
  * Genera un reporte PDF completo de la evaluación del candidato
@@ -14,106 +19,135 @@ const path = require('path');
  * @returns {Promise<Buffer>} - Buffer del PDF generado
  */
 async function generarReporteCandidato(sesionData) {
-  return new Promise((resolve, reject) => {
+  try {
+    // Descargar logo de 3IT
+    const logoUrl = 'https://static.wixstatic.com/media/3ec04d_1f1f0d021fce4472a254b66aca24f876~mv2.png';
+    let logoBuffer = null;
     try {
-      // Crear documento PDF
-      const doc = new PDFDocument({
-        size: 'A4',
-        margins: {
-          top: 50,
-          bottom: 50,
-          left: 50,
-          right: 50
+      logoBuffer = await descargarImagen(logoUrl);
+    } catch (error) {
+      console.warn('No se pudo descargar el logo de 3IT:', error.message);
+    }
+
+    return new Promise((resolve, reject) => {
+      try {
+        // Crear documento PDF
+        const doc = new PDFDocument({
+          size: 'A4',
+          margins: {
+            top: 50,
+            bottom: 50,
+            left: 50,
+            right: 50
+          }
+        });
+
+        // Registrar fuentes Century Gothic
+        doc.registerFont('CenturyGothic', FONT_REGULAR);
+        doc.registerFont('CenturyGothic-Bold', FONT_BOLD);
+
+        // Configurar fuente por defecto
+        doc.font('CenturyGothic');
+
+        // Buffer para almacenar el PDF
+        const chunks = [];
+        doc.on('data', (chunk) => chunks.push(chunk));
+        doc.on('end', () => resolve(Buffer.concat(chunks)));
+        doc.on('error', reject);
+
+        // ==================== ENCABEZADO ====================
+
+        // Agregar logo de 3IT en la esquina superior derecha
+        if (logoBuffer) {
+          try {
+            doc.image(logoBuffer, 450, 50, { width: 95 });
+          } catch (error) {
+            console.warn('Error al agregar logo al PDF:', error.message);
+          }
         }
-      });
 
-      // Buffer para almacenar el PDF
-      const chunks = [];
-      doc.on('data', (chunk) => chunks.push(chunk));
-      doc.on('end', () => resolve(Buffer.concat(chunks)));
-      doc.on('error', reject);
+        // Título principal
+        doc.font('CenturyGothic-Bold')
+           .fontSize(26)
+           .fillColor('#005aee')
+           .text('ChatBot 3IT', 50, 50, { align: 'left' });
 
-      // ==================== ENCABEZADO ====================
-      doc.fontSize(24)
-         .fillColor('#1a73e8')
-         .text('ChatBot 3IT', { align: 'center' });
+        doc.moveDown(2);
+        doc.strokeColor('#005aee')
+           .lineWidth(2)
+           .moveTo(50, doc.y)
+           .lineTo(545, doc.y)
+           .stroke();
 
-      doc.fontSize(16)
-         .fillColor('#333333')
-         .text('Reporte de Evaluación de Candidato', { align: 'center' });
-
-      doc.moveDown(1);
-      doc.strokeColor('#1a73e8')
-         .lineWidth(2)
-         .moveTo(50, doc.y)
-         .lineTo(545, doc.y)
-         .stroke();
-
-      doc.moveDown(2);
+        doc.moveDown(2);
+        doc.font('CenturyGothic'); // Volver a fuente normal
 
       // ==================== INFORMACIÓN DEL CANDIDATO ====================
-      doc.fontSize(14)
-         .fillColor('#1a73e8')
-         .text('INFORMACIÓN DEL CANDIDATO', { underline: true });
+      doc.font('CenturyGothic-Bold')
+         .fontSize(14)
+         .fillColor('#005aee')
+         .text('Información del Candidato', { underline: true });
 
       doc.moveDown(0.5);
-      doc.fontSize(11)
+      doc.font('CenturyGothic')
+         .fontSize(11)
          .fillColor('#333333');
 
       agregarCampo(doc, 'Nombre', sesionData.candidato_nombre || 'No especificado');
       agregarCampo(doc, 'Email', sesionData.candidato_email || 'No especificado');
       agregarCampo(doc, 'Teléfono', sesionData.candidato_telefono || 'No especificado');
-      agregarCampo(doc, 'Fecha de evaluación', formatearFecha(sesionData.fecha_completado || sesionData.fecha_fin));
-      agregarCampo(doc, 'Token de sesión', sesionData.token);
+      agregarCampo(doc, 'Fecha de inicio', formatearFecha(sesionData.fecha_inicio));
+      agregarCampo(doc, 'Fecha de finalización', formatearFecha(sesionData.fecha_fin || sesionData.fecha_completado));
 
       doc.moveDown(1.5);
 
       // ==================== RESULTADO DE LA EVALUACIÓN ====================
-      doc.fontSize(14)
-         .fillColor('#1a73e8')
-         .text('RESULTADO DE LA EVALUACIÓN', { underline: true });
+      doc.font('CenturyGothic-Bold')
+         .fontSize(14)
+         .fillColor('#005aee')
+         .text('Resultado de la Evaluación', { underline: true });
 
       doc.moveDown(0.5);
 
       // Color según resultado
       let colorResultado, textoResultado;
-      
+
       switch(sesionData.resultado) {
         case 'aprobado':
           colorResultado = '#28a745';
-          textoResultado = 'APROBADO';
+          textoResultado = 'Aprobado';
           break;
         case 'considerar':
           colorResultado = '#ff9800';
-          textoResultado = 'CONSIDERAR';
+          textoResultado = 'Considerar';
           break;
         case 'rechazado':
         default:
           colorResultado = '#dc3545';
-          textoResultado = 'RECHAZADO';
+          textoResultado = 'Rechazado';
           break;
       }
 
-      doc.fontSize(18)
-         .fillColor(colorResultado)
-         .text(textoResultado, { align: 'center' });
+      // Formatear porcentajes sin decimales innecesarios
+      const porcentaje = Math.round(parseFloat(sesionData.porcentaje_aprobacion) || 0);
+      const umbral = Math.round(parseFloat(sesionData.umbral_aprobacion) || 70);
 
-      doc.moveDown(0.5);
-
-      doc.fontSize(11)
+      doc.font('CenturyGothic')
+         .fontSize(11)
          .fillColor('#333333');
 
-      agregarCampo(doc, 'Puntaje obtenido', `${sesionData.puntaje_total || 0} / ${sesionData.puntaje_maximo || 100}`);
-      agregarCampo(doc, 'Porcentaje', `${sesionData.porcentaje_aprobacion || 0}%`);
-      agregarCampo(doc, 'Umbral de aprobación', `${sesionData.umbral_aprobacion || 70}%`);
+      agregarCampo(doc, 'Resultado', textoResultado);
+      agregarCampo(doc, 'Porcentaje obtenido', `${porcentaje}%`);
+      agregarCampo(doc, 'Umbral de aprobación', `${umbral}%`);
 
       doc.moveDown(1.5);
 
       // ==================== EVALUACIONES DESGLOSADAS ====================
 
-      doc.fontSize(14)
-         .fillColor('#1a73e8')
-         .text('EVALUACIONES DESGLOSADAS', { underline: true });
+      doc.font('CenturyGothic-Bold')
+         .fontSize(14)
+         .fillColor('#005aee')
+         .text('Evaluaciones Desglosadas', { underline: true });
 
       doc.moveDown(0.5);
 
@@ -134,7 +168,8 @@ async function generarReporteCandidato(sesionData) {
         });
 
         if (evaluacionesFiltradas.length === 0) {
-          doc.fontSize(11)
+          doc.font('CenturyGothic')
+             .fontSize(11)
              .fillColor('#666666')
              .text('No hay evaluaciones técnicas registradas.', { italic: true });
         }
@@ -146,14 +181,16 @@ async function generarReporteCandidato(sesionData) {
           }
 
           // Encabezado de la evaluación
-          doc.fontSize(12)
-             .fillColor('#1a73e8')
+          doc.font('CenturyGothic-Bold')
+             .fontSize(12)
+             .fillColor('#005aee')
              .text(`Pregunta ${index + 1}`, { underline: true });
 
           doc.moveDown(0.3);
 
           // Pregunta
-          doc.fontSize(11)
+          doc.font('CenturyGothic')
+             .fontSize(11)
              .fillColor('#333333')
              .text('Pregunta:', { continued: true })
              .fillColor('#666666')
@@ -197,7 +234,8 @@ async function generarReporteCandidato(sesionData) {
           doc.moveDown(1);
         });
       } else {
-        doc.fontSize(11)
+        doc.font('CenturyGothic')
+           .fontSize(11)
            .fillColor('#666666')
            .text('No hay evaluaciones registradas.', { italic: true });
       }
@@ -206,19 +244,22 @@ async function generarReporteCandidato(sesionData) {
       doc.fontSize(8)
          .fillColor('#999999')
          .text(
-           `Reporte generado por ChatBot 3IT | Fecha: ${formatearFecha(new Date())}`,
+           `ChatBot 3IT - Sistema de Evaluación | Fecha de generación: ${formatearFecha(new Date())}`,
            50,
            750,
            { align: 'center', width: 495 }
          );
 
-      // Finalizar documento
-      doc.end();
+        // Finalizar documento
+        doc.end();
 
-    } catch (error) {
-      reject(error);
-    }
-  });
+      } catch (error) {
+        reject(error);
+      }
+    });
+  } catch (error) {
+    throw error;
+  }
 }
 
 /**
@@ -248,6 +289,25 @@ async function guardarPDF(pdfBuffer, nombreArchivo) {
 // ==================== FUNCIONES AUXILIARES ====================
 
 /**
+ * Descarga una imagen desde una URL
+ */
+function descargarImagen(url) {
+  return new Promise((resolve, reject) => {
+    https.get(url, (response) => {
+      if (response.statusCode !== 200) {
+        reject(new Error(`Failed to download image: ${response.statusCode}`));
+        return;
+      }
+
+      const chunks = [];
+      response.on('data', (chunk) => chunks.push(chunk));
+      response.on('end', () => resolve(Buffer.concat(chunks)));
+      response.on('error', reject);
+    }).on('error', reject);
+  });
+}
+
+/**
  * Agrega un campo de información al PDF
  */
 function agregarCampo(doc, etiqueta, valor) {
@@ -270,6 +330,19 @@ function formatearFecha(fecha) {
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit'
+  });
+}
+
+/**
+ * Formatea solo la fecha sin hora
+ */
+function formatearSoloFecha(fecha) {
+  if (!fecha) return 'N/A';
+  const f = new Date(fecha);
+  return f.toLocaleDateString('es-ES', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
   });
 }
 

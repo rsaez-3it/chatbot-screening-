@@ -192,14 +192,14 @@ const enviarInvitacion = async (candidatoEmail, chatbotUrl, config, sesion) => {
 
     <!-- Header -->
     <div style="background: linear-gradient(135deg, #1e88e5 0%, #00acc1 100%); padding: 30px; text-align: center; border-radius: 20px; margin: 0 20px 20px 20px;">
-      <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: bold;">EVALUACIÓN PROFESIONAL</h1>
+      <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: bold;">CONVERSACIÓN VIRTUAL</h1>
     </div>
 
     <!-- Badge -->
     <div style="text-align: center; margin: 20px 0;">
       <div style="display: inline-block; background-color: #ffffff; padding: 12px 25px; border-radius: 25px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-        <span style="font-size: 18px; margin-right: 5px;">🎯</span>
-        <span style="font-size: 16px; font-weight: bold; color: #333333;">Tu Evaluación está Lista</span>
+        <span style="font-size: 18px; margin-right: 5px;">💬</span>
+        <span style="font-size: 16px; font-weight: bold; color: #333333;">¡Queremos conocerte!</span>
       </div>
     </div>
 
@@ -207,22 +207,21 @@ const enviarInvitacion = async (candidatoEmail, chatbotUrl, config, sesion) => {
     <div style="padding: 20px 30px;">
       <p style="color: #333333; font-size: 15px; margin: 0 0 10px 0;">${saludo}</p>
       <p style="color: #666666; font-size: 14px; line-height: 1.6; margin: 0 0 20px 0;">
-        Has sido invitado a completar la evaluación: <strong>"${config.nombre}"</strong>
+        Nos encantaría saber más de ti. Te invitamos a conversar con nuestro asistente virtual: <strong>"${config.nombre}"</strong>
       </p>
 
       <!-- Info box -->
       <div style="background-color: #f5f5f5; border-radius: 8px; padding: 20px; margin: 0 0 20px 0;">
-        <h3 style="color: #333333; font-size: 15px; margin: 0 0 12px 0;">📋 Información de la Entrevista</h3>
-        <p style="color: #666666; font-size: 13px; margin: 5px 0;">📅 <strong>Fecha límite:</strong> ${fechaExpiracion}</p>
-        <p style="color: #666666; font-size: 13px; margin: 5px 0;">⏱️ <strong>Duración estimada:</strong> 15-20 minutos</p>
-        <p style="color: #666666; font-size: 13px; margin: 5px 0;">❓ <strong>Preguntas:</strong> ${config.total_preguntas || 'Varias'}</p>
-        <p style="color: #666666; font-size: 13px; margin: 5px 0;">💻 <strong>Dispositivo:</strong> Computadora o móvil con cámara</p>
+        <h3 style="color: #333333; font-size: 15px; margin: 0 0 12px 0;">💬 Información</h3>
+        <p style="color: #666666; font-size: 13px; margin: 5px 0;">📅 <strong>Disponible hasta:</strong> ${fechaExpiracion}</p>
+        <p style="color: #666666; font-size: 13px; margin: 5px 0;">📱 <strong>Dispositivos:</strong> Funciona en computadora, tablet o celular</p>
+        <p style="color: #666666; font-size: 13px; margin: 5px 0;">⏱️ <strong>Tiempo:</strong> Sin límite por pregunta, responde con calma</p>
       </div>
 
       <!-- Botón -->
       <div style="text-align: center; margin: 0 0 20px 0;">
         <a href="${chatbotUrl}" style="display: inline-block; background: linear-gradient(135deg, #1e88e5 0%, #00acc1 100%); color: #ffffff; text-decoration: none; padding: 14px 35px; border-radius: 25px; font-size: 15px; font-weight: bold;">
-          Comenzar Evaluación
+          Comenzar Conversación
         </a>
       </div>
 
@@ -234,11 +233,11 @@ const enviarInvitacion = async (candidatoEmail, chatbotUrl, config, sesion) => {
 
       <!-- Consejos -->
       <div style="border-left: 3px solid #1e88e5; padding-left: 15px; margin: 0 0 15px 0;">
-        <p style="color: #1e88e5; font-size: 14px; font-weight: bold; margin: 0 0 8px 0;">💡 Consejos para la entrevista:</p>
+        <p style="color: #1e88e5; font-size: 14px; font-weight: bold; margin: 0 0 8px 0;">💡 Recomendaciones:</p>
         <ul style="color: #666666; font-size: 13px; margin: 0; padding-left: 20px; line-height: 1.6;">
-          <li>Busca un lugar tranquilo con buena iluminación</li>
-          <li>Prueba tu cámara y micrófono antes de comenzar</li>
-          <li>Responde con naturalidad y tómate tu tiempo</li>
+          <li>Busca un momento tranquilo para responder</li>
+          <li>Lee cada pregunta con atención</li>
+          <li>Responde de forma honesta y natural</li>
         </ul>
       </div>
     </div>
