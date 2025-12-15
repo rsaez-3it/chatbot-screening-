@@ -309,6 +309,99 @@ const obtenerEstadisticas = async (configId) => {
   }
 };
 
+/**
+ * Obtener sesión completa con información del chatbot
+ * @param {string} token - Token de la sesión
+ * @returns {Promise<Object|null>} Sesión con datos del chatbot
+ */
+const obtenerSesionCompleta = async (token) => {
+  try {
+    return await knex('cb_sesiones as s')
+      .select(
+        's.*',
+        'c.nombre as chatbot_nombre',
+        'c.descripcion as chatbot_descripcion',
+        'c.umbral_aprobacion',
+        'c.nombre_asistente',
+        'c.avatar_url',
+        'c.idioma',
+        'c.color_botones',
+        'c.color_conversacion',
+        'c.color_fondo',
+        'c.mensaje_bienvenida',
+        'c.mensaje_aprobado',
+        'c.mensaje_rechazado',
+        'c.email_reclutador'
+      )
+      .innerJoin('cb_config as c', 's.config_id', 'c.id')
+      .where('s.token', token)
+      .first();
+  } catch (error) {
+    throw new Error(`Error al obtener sesión completa: ${error.message}`);
+  }
+};
+
+/**
+ * Contar sesiones por estado
+ * @param {number} configId - ID del chatbot
+ * @returns {Promise<Object>} Conteo por cada estado
+ */
+const contarPorEstado = async (configId) => {
+  try {
+    const resultados = await knex('cb_sesiones')
+      .select('estado')
+      .count('* as total')
+      .where('config_id', configId)
+      .groupBy('estado');
+
+    // Convertir array a objeto con todos los estados
+    const conteo = {
+      pendiente: 0,
+      en_progreso: 0,
+      completado: 0,
+      expirado: 0,
+      cancelado: 0
+    };
+
+    resultados.forEach(item => {
+      conteo[item.estado] = parseInt(item.total);
+    });
+
+    return conteo;
+  } catch (error) {
+    throw new Error(`Error al contar sesiones por estado: ${error.message}`);
+  }
+};
+
+/**
+ * Obtener todas las sesiones con información del chatbot
+ * @param {Object} filtros - Filtros opcionales (estado, config_id)
+ * @returns {Promise<Array>} Lista de sesiones con nombre del chatbot
+ */
+const obtenerTodasConChatbot = async (filtros = {}) => {
+  try {
+    let query = knex('cb_sesiones as s')
+      .select(
+        's.*',
+        'c.nombre as chatbot_nombre'
+      )
+      .innerJoin('cb_config as c', 's.config_id', 'c.id');
+
+    // Aplicar filtros
+    if (filtros.estado) {
+      query = query.where('s.estado', filtros.estado);
+    }
+
+    if (filtros.config_id) {
+      query = query.where('s.config_id', filtros.config_id);
+    }
+
+    return await query.orderBy('s.created_at', 'desc');
+  } catch (error) {
+    throw new Error(`Error al obtener sesiones con chatbot: ${error.message}`);
+  }
+};
+
 module.exports = {
   crear,
   obtenerPorId,
@@ -319,5 +412,8 @@ module.exports = {
   eliminar,
   obtenerExpiradas,
   marcarComoExpiradas,
-  obtenerEstadisticas
+  obtenerEstadisticas,
+  obtenerSesionCompleta,
+  contarPorEstado,
+  obtenerTodasConChatbot
 };

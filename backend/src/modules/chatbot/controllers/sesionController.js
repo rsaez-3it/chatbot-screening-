@@ -4,7 +4,7 @@
  */
 
 const sesionService = require('../services/sesionService');
-const sesionesRepository = require('../repositories/sesionesRepository');
+const sesionesRepository = require('../repositories/sesionesRepository.knex'); // 🔒 Usando Knex (seguro)
 const configRepository = require('../repositories/configRepository');
 const perfilService = require('../services/perfilService');
 
