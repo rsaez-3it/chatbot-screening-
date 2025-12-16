@@ -4,6 +4,8 @@ require('dotenv').config();
 // Importar dependencias
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 
 // Importar rutas
 const configRoutes = require('./modules/chatbot/routes/configRoutes');
@@ -20,10 +22,72 @@ const app = express();
 // Configuración del puerto
 const PORT = process.env.PORT || 4000;
 
-// Middlewares
-app.use(cors()); // Habilitar CORS para todas las rutas
-app.use(express.json()); // Parser para JSON
-app.use(express.urlencoded({ extended: true })); // Parser para datos URL-encoded
+// ============================================================================
+// CONFIGURACIÓN DE SEGURIDAD
+// ============================================================================
+
+// 1. Helmet - Protección de headers HTTP
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", 'data:', 'https:']
+    }
+  },
+  crossOriginEmbedderPolicy: false // Permitir embeddings si es necesario
+}));
+
+// 2. Rate Limiting - Prevención de brute force y DoS
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 100, // Límite de 100 requests por IP
+  message: {
+    success: false,
+    message: 'Demasiadas solicitudes desde esta IP. Por favor intente más tarde.'
+  },
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+});
+
+// Aplicar rate limiting a todas las rutas
+app.use(limiter);
+
+// Rate limiting más estricto para rutas de autenticación
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 5, // Solo 5 intentos
+  message: {
+    success: false,
+    message: 'Demasiados intentos de autenticación. Por favor intente más tarde.'
+  }
+});
+
+// 3. CORS Restrictivo
+const allowedOrigins = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(',')
+  : ['http://localhost:3000', 'http://localhost:5173']; // Default para desarrollo
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // Permitir requests sin origin (como mobile apps o curl)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'La política CORS no permite el acceso desde este origen.';
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
+  credentials: true, // Permitir cookies
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+// 4. Request Size Limits - Prevención de ataques de carga masiva
+app.use(express.json({ limit: '10mb' })); // Límite de 10MB para JSON
+app.use(express.urlencoded({ extended: true, limit: '10mb' })); // Límite de 10MB para URL-encoded
 
 // Ruta de prueba
 app.get('/', (req, res) => {
