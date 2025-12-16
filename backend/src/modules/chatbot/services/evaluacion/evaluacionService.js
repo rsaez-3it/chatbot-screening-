@@ -5,8 +5,8 @@
 
 const EvaluatorFactory = require('./evaluators/EvaluatorFactory');
 const ScoringService = require('./scoringService');
-const evaluacionesRepository = require('../../repositories/evaluacionesRepository');
-const preguntasRepository = require('../../repositories/preguntasRepository');
+const evaluacionesRepository = require('../../repositories/evaluacionesRepository.knex');
+const preguntasRepository = require('../../repositories/preguntasRepository.knex');
 
 class EvaluacionService {
   /**

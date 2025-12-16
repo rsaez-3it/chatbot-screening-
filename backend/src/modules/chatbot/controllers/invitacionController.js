@@ -3,8 +3,8 @@
  * Maneja el envío de invitaciones por email a candidatos
  */
 
-const configRepository = require('../repositories/configRepository');
-const sesionesRepository = require('../repositories/sesionesRepository');
+const configRepository = require('../repositories/configRepository.knex');
+const sesionesRepository = require('../repositories/sesionesRepository.knex');
 const emailService = require('../../../shared/services/emailService');
 
 /**

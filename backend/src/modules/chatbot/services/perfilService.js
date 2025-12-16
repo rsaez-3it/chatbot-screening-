@@ -4,9 +4,9 @@
  * y NO se evalúan, solo se guardan en la sesión
  */
 
-const preguntasRepository = require('../repositories/preguntasRepository');
-const sesionesRepository = require('../repositories/sesionesRepository');
-const mensajesRepository = require('../repositories/mensajesRepository');
+const preguntasRepository = require('../repositories/preguntasRepository.knex');
+const sesionesRepository = require('../repositories/sesionesRepository.knex');
+const mensajesRepository = require('../repositories/mensajesRepository.knex');
 
 class PerfilService {
   /**

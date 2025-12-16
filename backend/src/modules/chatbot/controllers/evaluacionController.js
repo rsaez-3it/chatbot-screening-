@@ -4,7 +4,7 @@
  */
 
 const evaluacionService = require('../services/evaluacion/evaluacionService');
-const evaluacionesRepository = require('../repositories/evaluacionesRepository');
+const evaluacionesRepository = require('../repositories/evaluacionesRepository.knex');
 
 const evaluacionController = {
   /**

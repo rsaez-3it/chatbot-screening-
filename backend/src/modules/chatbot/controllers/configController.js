@@ -3,8 +3,8 @@
  * Maneja las peticiones HTTP relacionadas con configuración y preguntas
  */
 
-const configRepository = require('../repositories/configRepository');
-const preguntasRepository = require('../repositories/preguntasRepository');
+const configRepository = require('../repositories/configRepository.knex');
+const preguntasRepository = require('../repositories/preguntasRepository.knex');
 
 // ============================================================================
 // CONTROLADORES DE CONFIGURACIÓN

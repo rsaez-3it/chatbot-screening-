@@ -4,10 +4,10 @@
  */
 
 const crypto = require('crypto');
-const sesionesRepository = require('../repositories/sesionesRepository');
-const configRepository = require('../repositories/configRepository');
-const mensajesRepository = require('../repositories/mensajesRepository');
-const evaluacionesRepository = require('../repositories/evaluacionesRepository');
+const sesionesRepository = require('../repositories/sesionesRepository.knex');
+const configRepository = require('../repositories/configRepository.knex');
+const mensajesRepository = require('../repositories/mensajesRepository.knex');
+const evaluacionesRepository = require('../repositories/evaluacionesRepository.knex');
 const evaluacionService = require('./evaluacion/evaluacionService');
 const emailService = require('../../../shared/services/emailService');
 

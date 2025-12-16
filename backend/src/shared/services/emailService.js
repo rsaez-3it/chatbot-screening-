@@ -6,7 +6,7 @@
 console.log('🚀 Cargando emailService.js - VERSIÓN NUEVA');
 
 const nodemailer = require('nodemailer');
-const emailTemplateRepository = require('../repositories/emailTemplateRepository');
+const emailTemplateRepository = require('../repositories/emailTemplateRepository.knex');
 const pdfService = require('./pdfService');
 const fs = require('fs');
 const path = require('path');

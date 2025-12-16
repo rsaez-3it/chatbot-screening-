@@ -4,8 +4,8 @@
  */
 
 const mensajeService = require('../services/mensajeService');
-const mensajesRepository = require('../repositories/mensajesRepository');
-const sesionesRepository = require('../repositories/sesionesRepository');
+const mensajesRepository = require('../repositories/mensajesRepository.knex');
+const sesionesRepository = require('../repositories/sesionesRepository.knex');
 
 /**
  * POST /api/mensajes

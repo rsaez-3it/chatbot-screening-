@@ -3,9 +3,9 @@
  * Funciones auxiliares para gestión de mensajes del chatbot
  */
 
-const mensajesRepository = require('../repositories/mensajesRepository');
-const sesionesRepository = require('../repositories/sesionesRepository');
-const preguntasRepository = require('../repositories/preguntasRepository');
+const mensajesRepository = require('../repositories/mensajesRepository.knex');
+const sesionesRepository = require('../repositories/sesionesRepository.knex');
+const preguntasRepository = require('../repositories/preguntasRepository.knex');
 const evaluacionService = require('./evaluacion/evaluacionService');
 const perfilService = require('./perfilService');
 
