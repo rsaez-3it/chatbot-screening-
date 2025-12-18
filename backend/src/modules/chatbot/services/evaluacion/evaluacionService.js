@@ -7,6 +7,7 @@ const EvaluatorFactory = require('./evaluators/EvaluatorFactory');
 const ScoringService = require('./scoringService');
 const evaluacionesRepository = require('../../repositories/evaluacionesRepository.knex');
 const preguntasRepository = require('../../repositories/preguntasRepository.knex');
+const logger = require('../../../../config/logger');
 
 class EvaluacionService {
   /**
@@ -19,7 +20,11 @@ class EvaluacionService {
    */
   static async evaluar(pregunta, respuesta, sesionId, mensajeId) {
     try {
-      console.log(`📊 Evaluando respuesta para pregunta ${pregunta.id} en sesión ${sesionId}`);
+      logger.debug('Evaluando respuesta', {
+        service: 'evaluacionService',
+        preguntaId: pregunta.id,
+        sesionId
+      });
 
       // 1. Crear evaluador según método de evaluación
       const metodoEvaluacion = pregunta.metodo_evaluacion || 'regla_fija';
@@ -51,7 +56,12 @@ class EvaluacionService {
       // 6. Obtener la evaluación completa
       const evaluacionGuardada = await evaluacionesRepository.obtenerPorId(evaluacionId);
 
-      console.log(`✅ Evaluación guardada - ID: ${evaluacionGuardada?.id}, Cumple: ${evaluacionGuardada?.cumple}, Puntaje: ${evaluacionGuardada?.puntaje}`);
+      logger.info('Evaluación guardada', {
+        service: 'evaluacionService',
+        evaluacionId: evaluacionGuardada?.id,
+        cumple: evaluacionGuardada?.cumple,
+        puntaje: evaluacionGuardada?.puntaje
+      });
 
       return {
         success: true,
@@ -60,7 +70,11 @@ class EvaluacionService {
       };
 
     } catch (error) {
-      console.error('❌ Error en evaluación:', error);
+      logger.logError(error, {
+        service: 'evaluacionService',
+        operacion: 'evaluar_respuesta',
+        preguntaId: pregunta.id
+      });
       return {
         success: false,
         error: error.message,
@@ -76,7 +90,10 @@ class EvaluacionService {
    */
   static async calcularPuntajeSesion(sesionId) {
     try {
-      console.log(`🧮 Calculando puntaje para sesión ${sesionId}`);
+      logger.debug('Calculando puntaje de sesión', {
+        service: 'evaluacionService',
+        sesionId
+      });
 
       // 1. Obtener todas las evaluaciones de la sesión
       const evaluaciones = await evaluacionesRepository.obtenerPorSesion(sesionId);
@@ -101,7 +118,12 @@ class EvaluacionService {
       const preguntasReprobadas = evaluaciones.filter(e => e.cumple === 0 || e.cumple === false).length;
       const preguntasPendientes = evaluaciones.filter(e => e.cumple === null).length;
 
-      console.log(`📈 Puntaje: ${puntaje_total}/${puntaje_maximo} (${porcentaje}%)`);
+      logger.info('Puntaje calculado', {
+        service: 'evaluacionService',
+        puntajeTotal: puntaje_total,
+        puntajeMaximo: puntaje_maximo,
+        porcentaje
+      });
 
       return {
         puntaje_total,
@@ -114,7 +136,11 @@ class EvaluacionService {
       };
 
     } catch (error) {
-      console.error('❌ Error al calcular puntaje:', error);
+      logger.logError(error, {
+        service: 'evaluacionService',
+        operacion: 'calcular_puntaje',
+        sesionId
+      });
       throw error;
     }
   }
@@ -127,7 +153,11 @@ class EvaluacionService {
    */
   static async determinarResultado(sesionId, umbralAprobacion = 70) {
     try {
-      console.log(`🎯 Determinando resultado para sesión ${sesionId} (umbral: ${umbralAprobacion}%)`);
+      logger.debug('Determinando resultado de evaluación', {
+        service: 'evaluacionService',
+        sesionId,
+        umbralAprobacion
+      });
 
       // 1. Obtener todas las evaluaciones
       const evaluaciones = await evaluacionesRepository.obtenerPorSesion(sesionId);
@@ -158,12 +188,20 @@ class EvaluacionService {
       // 3. Calcular resultado completo usando ScoringService
       const resultadoCompleto = ScoringService.calcularResultadoCompleto(evaluaciones, umbralAprobacion);
 
-      console.log(`${resultadoCompleto.resultado === 'aprobado' ? '✅' : '❌'} ${resultadoCompleto.razon}`);
+      logger.info('Resultado determinado', {
+        service: 'evaluacionService',
+        resultado: resultadoCompleto.resultado,
+        razon: resultadoCompleto.razon
+      });
 
       return resultadoCompleto;
 
     } catch (error) {
-      console.error('❌ Error al determinar resultado:', error);
+      logger.logError(error, {
+        service: 'evaluacionService',
+        operacion: 'determinar_resultado',
+        sesionId
+      });
       throw error;
     }
   }
@@ -175,7 +213,10 @@ class EvaluacionService {
    */
   static async reevaluar(evaluacionId) {
     try {
-      console.log(`🔄 Re-evaluando evaluación ${evaluacionId}`);
+      logger.info('Re-evaluando evaluación', {
+        service: 'evaluacionService',
+        evaluacionId
+      });
 
       // 1. Obtener evaluación existente
       const evaluaciones = await evaluacionesRepository.obtenerPorSesion(evaluacionId);
@@ -192,7 +233,9 @@ class EvaluacionService {
 
       // 3. Volver a evaluar
       // TODO: Necesitaríamos obtener la respuesta original del mensaje
-      console.log('⚠️  Re-evaluación requiere obtener respuesta original del mensaje');
+      logger.warn('Re-evaluación requiere respuesta original del mensaje', {
+        service: 'evaluacionService'
+      });
 
       return {
         success: false,
@@ -200,7 +243,11 @@ class EvaluacionService {
       };
 
     } catch (error) {
-      console.error('❌ Error al re-evaluar:', error);
+      logger.logError(error, {
+        service: 'evaluacionService',
+        operacion: 're_evaluar',
+        evaluacionId
+      });
       throw error;
     }
   }
@@ -225,7 +272,11 @@ class EvaluacionService {
       return ScoringService.distribucionPorMetodo(evaluaciones);
 
     } catch (error) {
-      console.error('❌ Error al obtener estadísticas:', error);
+      logger.logError(error, {
+        service: 'evaluacionService',
+        operacion: 'obtener_estadisticas',
+        sesionId
+      });
       throw error;
     }
   }
@@ -264,7 +315,11 @@ class EvaluacionService {
       };
 
     } catch (error) {
-      console.error('❌ Error al validar finalización:', error);
+      logger.logError(error, {
+        service: 'evaluacionService',
+        operacion: 'validar_finalizacion',
+        sesionId
+      });
       throw error;
     }
   }

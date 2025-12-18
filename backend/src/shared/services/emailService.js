@@ -3,13 +3,12 @@
  * Usa nodemailer y plantillas de cb_email_templates
  */
 
-console.log('🚀 Cargando emailService.js - VERSIÓN NUEVA');
-
 const nodemailer = require('nodemailer');
 const emailTemplateRepository = require('../repositories/emailTemplateRepository.knex');
 const pdfService = require('./pdfService');
 const fs = require('fs');
 const path = require('path');
+const logger = require('../../config/logger');
 
 /**
  * Crear transporter de nodemailer
@@ -106,7 +105,9 @@ const enviarEmail = async (destinatario, asunto, cuerpoHtml, cuerpoTexto = null,
   try {
     // Verificar configuración
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-      console.warn('⚠️  Configuración de email no encontrada. Email no enviado (modo desarrollo)');
+      logger.warn('Configuración de email no encontrada - modo desarrollo', {
+        service: 'emailService'
+      });
       return {
         success: true,
         modo: 'desarrollo',
@@ -129,7 +130,11 @@ const enviarEmail = async (destinatario, asunto, cuerpoHtml, cuerpoTexto = null,
 
     const info = await transporter.sendMail(mailOptions);
 
-    console.log(`✅ Email enviado a ${destinatario}: ${info.messageId}`);
+    logger.info('Email enviado exitosamente', {
+      service: 'emailService',
+      messageId: info.messageId,
+      asunto
+    });
 
     return {
       success: true,
@@ -139,7 +144,11 @@ const enviarEmail = async (destinatario, asunto, cuerpoHtml, cuerpoTexto = null,
     };
 
   } catch (error) {
-    console.error('❌ Error al enviar email:', error);
+    logger.logError(error, {
+      service: 'emailService',
+      operacion: 'enviar_email',
+      asunto
+    });
     throw new Error(`Error al enviar email: ${error.message}`);
   }
 };
@@ -154,13 +163,12 @@ const enviarEmail = async (destinatario, asunto, cuerpoHtml, cuerpoTexto = null,
  */
 const enviarInvitacion = async (candidatoEmail, chatbotUrl, config, sesion) => {
   try {
-    console.log('='.repeat(80));
-    console.log('🔍 DEBUG enviarInvitacion');
-    console.log('📧 Email:', candidatoEmail);
-    console.log('🔗 URL:', chatbotUrl);
-    console.log('⚙️  Config:', config ? config.nombre : 'undefined');
-    console.log('👤 Sesion:', sesion ? sesion.candidato_nombre : 'undefined');
-    console.log('='.repeat(80));
+    logger.debug('Enviando invitación a candidato', {
+      service: 'emailService',
+      chatbotNombre: config?.nombre,
+      tieneCandidatoNombre: !!sesion?.candidato_nombre,
+      sesionId: sesion?.id
+    });
 
     const fechaExpiracion = new Date(sesion.fecha_expiracion).toLocaleDateString('es-ES', {
       day: '2-digit',
@@ -256,7 +264,11 @@ const enviarInvitacion = async (candidatoEmail, chatbotUrl, config, sesion) => {
     return await enviarEmail(candidatoEmail, asunto, cuerpo);
 
   } catch (error) {
-    console.error('Error al enviar invitación:', error);
+    logger.logError(error, {
+      service: 'emailService',
+      operacion: 'enviar_invitacion',
+      chatbotNombre: config?.nombre
+    });
     throw error;
   }
 };
@@ -274,10 +286,17 @@ const enviarInvitacion = async (candidatoEmail, chatbotUrl, config, sesion) => {
  */
 const notificarReclutador = async (reclutadorEmail, sesionData) => {
   try {
-    console.log(`📧 Notificando a reclutador: ${reclutadorEmail}`);
+    logger.info('Notificando a reclutador', {
+      service: 'emailService',
+      sesionId: sesionData.id,
+      resultado: sesionData.resultado
+    });
 
     // 1. GENERAR PDF
-    console.log('📄 Generando PDF del reporte...');
+    logger.debug('Generando PDF del reporte', {
+      service: 'emailService',
+      sesionId: sesionData.id
+    });
     const pdfBuffer = await pdfService.generarReporteCandidato(sesionData);
 
     // 2. CONSTRUIR EMAIL SIMPLE (todo está en el PDF)
@@ -471,7 +490,11 @@ const notificarReclutador = async (reclutadorEmail, sesionData) => {
     return await enviarEmail(reclutadorEmail, asunto, cuerpoHtml, null, attachments);
 
   } catch (error) {
-    console.error('Error al notificar a reclutador:', error);
+    logger.logError(error, {
+      service: 'emailService',
+      operacion: 'notificar_reclutador',
+      sesionId: sesionData?.id
+    });
     throw error;
   }
 };
@@ -486,7 +509,11 @@ const notificarReclutador = async (reclutadorEmail, sesionData) => {
  */
 const enviarRecordatorio = async (candidatoEmail, chatbotUrl, horasRestantes, sesion) => {
   try {
-    console.log(`📧 Enviando recordatorio a ${candidatoEmail}`);
+    logger.info('Enviando recordatorio de evaluación pendiente', {
+      service: 'emailService',
+      sesionId: sesion?.id,
+      horasRestantes
+    });
 
     const plantilla = await obtenerPlantilla('recordatorio');
 
@@ -510,7 +537,11 @@ const enviarRecordatorio = async (candidatoEmail, chatbotUrl, horasRestantes, se
     return await enviarEmail(candidatoEmail, asunto, cuerpo);
 
   } catch (error) {
-    console.error('Error al enviar recordatorio:', error);
+    logger.logError(error, {
+      service: 'emailService',
+      operacion: 'enviar_recordatorio',
+      sesionId: sesion?.id
+    });
     throw error;
   }
 };
