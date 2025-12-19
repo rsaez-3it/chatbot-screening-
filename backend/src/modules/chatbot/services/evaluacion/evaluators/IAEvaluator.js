@@ -4,6 +4,8 @@
  * Por ahora retorna mock, preparado para integración futura
  */
 
+const logger = require('../../../../../config/logger');
+
 class IAEvaluator {
   /**
    * Evaluar una respuesta usando IA
@@ -16,7 +18,10 @@ class IAEvaluator {
       // TODO: Integrar con API de IA (OpenAI, Claude, etc.)
       // Por ahora retornamos un mock simulado
 
-      console.log('⚠️  IAEvaluator: Modo mock activado. Retornando evaluación simulada.');
+      logger.debug('IAEvaluator en modo mock', {
+        service: 'IAEvaluator',
+        nota: 'Retornando evaluación simulada'
+      });
 
       // Simular delay de API
       await this.delay(500);
