@@ -3,6 +3,8 @@
  * Captura y formatea todos los errores de la aplicación
  */
 
+const logger = require('../../config/logger');
+
 /**
  * Middleware para manejar errores 404 (ruta no encontrada)
  */
@@ -111,16 +113,16 @@ const errorHandler = (err, req, res, next) => {
     };
   }
 
-  // Log del error en consola
-  console.error('❌ Error capturado:');
-  console.error(`   Tipo: ${errorType}`);
-  console.error(`   Mensaje: ${message}`);
-  console.error(`   Código: ${res.statusCode || statusCode}`);
-  console.error(`   Ruta: ${req.method} ${req.originalUrl}`);
-
-  if (process.env.NODE_ENV === 'development') {
-    console.error(`   Stack: ${err.stack}`);
-  }
+  // Log del error con Winston
+  logger.error('Error capturado en aplicación', {
+    service: 'errorHandler',
+    tipo: errorType,
+    mensaje: message,
+    codigo: res.statusCode || statusCode,
+    metodo: req.method,
+    ruta: req.originalUrl,
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+  });
 
   // Enviar respuesta de error
   res.status(res.statusCode || statusCode).json(errorResponse);

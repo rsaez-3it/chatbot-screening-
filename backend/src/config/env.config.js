@@ -24,7 +24,7 @@ function required(name, value) {
     if (process.env.NODE_ENV === 'production') {
       throw new Error(`❌ Variable de entorno requerida faltante: ${name}`);
     }
-    console.warn(`⚠️  Variable de entorno faltante: ${name}`);
+    // En desarrollo, solo retornar el valor sin logging (se valida en producción)
   }
   return value;
 }
@@ -148,9 +148,7 @@ const config = {
 // ==================== VALIDACIÓN EN PRODUCCIÓN ====================
 
 if (config.isProduction) {
-  console.log('🔐 Validando configuración para producción...');
-
-  // Validar variables críticas
+  // Validar variables críticas en producción
   const criticalVars = [
     config.database.host,
     config.database.user,
@@ -170,22 +168,29 @@ if (config.isProduction) {
     throw new Error('❌ SEGURIDAD: Debes cambiar JWT_SECRET en producción');
   }
 
-  console.log('✅ Configuración validada correctamente');
+  const logger = require('./logger');
+  logger.info('Configuración validada correctamente para producción', {
+    service: 'env.config'
+  });
 }
 
 // ==================== EXPORTAR CONFIGURACIÓN ====================
 
 module.exports = config;
 
-// También exportar función de ayuda para debugging
+// Función de ayuda para debugging (solo development)
 module.exports.printConfig = function() {
-  console.log('\n📋 CONFIGURACIÓN ACTUAL:\n');
-  console.log(`Entorno: ${config.env}`);
-  console.log(`Puerto: ${config.server.port}`);
-  console.log(`Base de datos: ${config.database.user}@${config.database.host}:${config.database.port}/${config.database.name}`);
-  console.log(`Email: ${config.email.user} (${config.email.host}:${config.email.port})`);
-  console.log(`Frontend: ${config.frontend.url}`);
-  console.log(`CORS: ${config.security.corsEnabled ? 'Habilitado' : 'Deshabilitado'}`);
-  console.log(`Logging: ${config.logging.level} (${config.logging.format})`);
-  console.log('');
+  const logger = require('./logger');
+
+  logger.info('Configuración del sistema', {
+    service: 'env.config',
+    entorno: config.env,
+    puerto: config.server.port,
+    dbHost: config.database.host,
+    dbName: config.database.name,
+    smtpHost: config.email.host,
+    frontendUrl: config.frontend.url,
+    corsEnabled: config.security.corsEnabled,
+    logLevel: config.logging.level
+  });
 };

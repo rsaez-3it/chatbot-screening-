@@ -6,6 +6,7 @@
 const ReglaFijaEvaluator = require('./ReglaFijaEvaluator');
 const IAEvaluator = require('./IAEvaluator');
 const ManualEvaluator = require('./ManualEvaluator');
+const logger = require('../../../../config/logger');
 
 class EvaluatorFactory {
   /**
@@ -32,7 +33,10 @@ class EvaluatorFactory {
 
       default:
         // Por defecto, usar reglas fijas
-        console.warn(`Método de evaluación desconocido: ${metodoEvaluacion}. Usando regla_fija.`);
+        logger.warn('Método de evaluación desconocido, usando regla_fija', {
+          service: 'EvaluatorFactory',
+          metodoEvaluacion
+        });
         return new ReglaFijaEvaluator();
     }
   }

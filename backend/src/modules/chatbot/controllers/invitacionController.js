@@ -6,6 +6,8 @@
 const configRepository = require('../repositories/configRepository.knex');
 const sesionesRepository = require('../repositories/sesionesRepository.knex');
 const emailService = require('../../../shared/services/emailService');
+const HTTP_CONSTANTS = require('../../../shared/constants/http');
+const logger = require('../../../config/logger');
 
 /**
  * POST /api/config/:id/invitar
@@ -99,7 +101,7 @@ const enviarInvitaciones = async (req, res, next) => {
         const sesionId = await sesionesRepository.crear(sesionData);
         
         // Generar link único de la sesión usando el token
-        const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+        const baseUrl = HTTP_CONSTANTS.FRONTEND_URL;
         const linkSesion = `${baseUrl}/chat/${token}`;
 
         // Crear objeto sesión completo para el email
@@ -111,11 +113,12 @@ const enviarInvitaciones = async (req, res, next) => {
           fecha_expiracion: fechaExpiracion
         };
 
-        // DEBUG: Log antes de enviar email
-        console.log('🔥 INVITACION CONTROLLER - Enviando email a:', candidato.email);
-        console.log('🔥 Link:', linkSesion);
-        console.log('🔥 Chatbot:', chatbot.nombre);
-        console.log('🔥 Sesion:', sesionParaEmail);
+        // Log del envío de invitación
+        logger.debug('Enviando invitación a candidato', {
+          service: 'invitacionController',
+          sesionId,
+          chatbotNombre: chatbot.nombre
+        });
 
         // Enviar email con los parámetros correctos
         const resultado = await emailService.enviarInvitacion(
@@ -125,7 +128,11 @@ const enviarInvitaciones = async (req, res, next) => {
           sesionParaEmail
         );
         
-        console.log('✅ Email enviado, messageId:', resultado.messageId);
+        logger.info('Email de invitación enviado', {
+          service: 'invitacionController',
+          sesionId,
+          messageId: resultado.messageId
+        });
 
         resultados.push({
           email: candidato.email,
@@ -136,7 +143,11 @@ const enviarInvitaciones = async (req, res, next) => {
         });
 
       } catch (error) {
-        console.error(`Error al enviar invitación a ${candidato.email}:`, error);
+        logger.error('Error al enviar invitación', {
+          service: 'invitacionController',
+          error: error.message,
+          sesionId
+        });
         errores.push({
           email: candidato.email,
           nombre: candidato.nombre,

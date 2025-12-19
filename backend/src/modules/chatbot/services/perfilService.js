@@ -7,6 +7,7 @@
 const preguntasRepository = require('../repositories/preguntasRepository.knex');
 const sesionesRepository = require('../repositories/sesionesRepository.knex');
 const mensajesRepository = require('../repositories/mensajesRepository.knex');
+const logger = require('../../../config/logger');
 
 class PerfilService {
   /**
@@ -42,7 +43,10 @@ class PerfilService {
       return preguntasFaltantes;
 
     } catch (error) {
-      console.error('❌ Error al obtener preguntas de perfil faltantes:', error);
+      logger.error('Error al obtener preguntas de perfil faltantes', {
+        service: 'perfilService',
+        error: error.message
+      });
       throw error;
     }
   }
@@ -69,18 +73,27 @@ class PerfilService {
           datosActualizar.candidato_telefono = respuesta.trim();
           break;
         default:
-          console.warn(`⚠️  Campo de perfil desconocido: ${pregunta.campo_perfil}`);
+          logger.warn('Campo de perfil desconocido', {
+            service: 'perfilService',
+            campoPerfil: pregunta.campo_perfil
+          });
           return false;
       }
 
       // Actualizar sesión con los datos
       await sesionesRepository.actualizar(sesionId, datosActualizar);
 
-      console.log(`✅ Datos de perfil guardados: ${pregunta.campo_perfil} = ${respuesta}`);
+      logger.info('Datos de perfil guardados', {
+        service: 'perfilService',
+        campoPerfil: pregunta.campo_perfil
+      });
       return true;
 
     } catch (error) {
-      console.error('❌ Error al guardar respuesta de perfil:', error);
+      logger.error('Error al guardar respuesta de perfil', {
+        service: 'perfilService',
+        error: error.message
+      });
       throw error;
     }
   }

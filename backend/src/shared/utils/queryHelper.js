@@ -4,6 +4,7 @@
  */
 
 const { getPool } = require('../../config/database');
+const logger = require('../../config/logger');
 
 /**
  * Ejecuta una query SQL con parámetros
@@ -22,12 +23,13 @@ const executeQuery = async (sql, params = [], showLog = false) => {
     // Obtener una conexión del pool
     connection = await pool.getConnection();
 
-    // Log opcional para debugging
+    // Log opcional para debugging (sin exponer datos sensibles)
     if (showLog) {
-      console.log('🔍 Ejecutando query:', sql);
-      if (params.length > 0) {
-        console.log('📝 Parámetros:', params);
-      }
+      logger.debug('Ejecutando query SQL', {
+        service: 'queryHelper',
+        queryType: sql.split(' ')[0].toUpperCase(),
+        hasParams: params.length > 0
+      });
     }
 
     // Ejecutar la query
@@ -35,17 +37,22 @@ const executeQuery = async (sql, params = [], showLog = false) => {
 
     // Log de resultado
     if (showLog) {
-      console.log(`✅ Query ejecutada. Filas afectadas/retornadas: ${rows.length || rows.affectedRows || 0}`);
+      logger.debug('Query ejecutada exitosamente', {
+        service: 'queryHelper',
+        rowsAffected: rows.length || rows.affectedRows || 0
+      });
     }
 
     return rows;
 
   } catch (error) {
-    console.error('❌ Error al ejecutar query:', error.message);
-    console.error('📄 SQL:', sql);
-    if (params.length > 0) {
-      console.error('📝 Parámetros:', params);
-    }
+    // Log de error SIN exponer SQL ni parámetros sensibles
+    logger.error('Error al ejecutar query SQL', {
+      service: 'queryHelper',
+      error: error.message,
+      code: error.code,
+      queryType: sql.split(' ')[0].toUpperCase()
+    });
     throw error;
 
   } finally {
@@ -68,7 +75,10 @@ const findOne = async (sql, params = [], showLog = false) => {
     const rows = await executeQuery(sql, params, showLog);
     return rows.length > 0 ? rows[0] : null;
   } catch (error) {
-    console.error('❌ Error en findOne:', error.message);
+    logger.error('Error en findOne', {
+      service: 'queryHelper',
+      error: error.message
+    });
     throw error;
   }
 };
@@ -84,7 +94,10 @@ const findAll = async (sql, params = [], showLog = false) => {
   try {
     return await executeQuery(sql, params, showLog);
   } catch (error) {
-    console.error('❌ Error en findAll:', error.message);
+    logger.error('Error en findAll', {
+      service: 'queryHelper',
+      error: error.message
+    });
     throw error;
   }
 };
@@ -101,7 +114,10 @@ const insert = async (sql, params = [], showLog = false) => {
     const result = await executeQuery(sql, params, showLog);
     return result.insertId;
   } catch (error) {
-    console.error('❌ Error en insert:', error.message);
+    logger.error('Error en insert', {
+      service: 'queryHelper',
+      error: error.message
+    });
     throw error;
   }
 };
@@ -118,7 +134,10 @@ const update = async (sql, params = [], showLog = false) => {
     const result = await executeQuery(sql, params, showLog);
     return result.affectedRows;
   } catch (error) {
-    console.error('❌ Error en update:', error.message);
+    logger.error('Error en update', {
+      service: 'queryHelper',
+      error: error.message
+    });
     throw error;
   }
 };
@@ -135,7 +154,10 @@ const remove = async (sql, params = [], showLog = false) => {
     const result = await executeQuery(sql, params, showLog);
     return result.affectedRows;
   } catch (error) {
-    console.error('❌ Error en remove:', error.message);
+    logger.error('Error en remove', {
+      service: 'queryHelper',
+      error: error.message
+    });
     throw error;
   }
 };
@@ -152,21 +174,28 @@ const transaction = async (callback) => {
   try {
     // Iniciar transacción
     await connection.beginTransaction();
-    console.log('🔄 Transacción iniciada');
+    logger.debug('Transacción iniciada', {
+      service: 'queryHelper'
+    });
 
     // Ejecutar el callback con la conexión
     const result = await callback(connection);
 
     // Confirmar transacción
     await connection.commit();
-    console.log('✅ Transacción confirmada');
+    logger.debug('Transacción confirmada', {
+      service: 'queryHelper'
+    });
 
     return result;
 
   } catch (error) {
     // Revertir transacción en caso de error
     await connection.rollback();
-    console.error('❌ Transacción revertida:', error.message);
+    logger.error('Transacción revertida', {
+      service: 'queryHelper',
+      error: error.message
+    });
     throw error;
 
   } finally {

@@ -10,6 +10,8 @@ const mensajesRepository = require('../repositories/mensajesRepository.knex');
 const evaluacionesRepository = require('../repositories/evaluacionesRepository.knex');
 const evaluacionService = require('./evaluacion/evaluacionService');
 const emailService = require('../../../shared/services/emailService');
+const logger = require('../../../config/logger');
+const HTTP_CONSTANTS = require('../../../shared/constants/http');
 
 /**
  * Generar un token único para la sesión
@@ -91,7 +93,7 @@ const crearSesion = async (configId, datosCandidato = {}) => {
     // 📧 ENVIAR EMAIL DE INVITACIÓN (si tiene email)
     if (datosCandidato.email) {
       try {
-        const chatbotUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/chatbot/${token}`;
+        const chatbotUrl = `${HTTP_CONSTANTS.FRONTEND_URL}/chatbot/${token}`;
 
         await emailService.enviarInvitacion(
           datosCandidato.email,
@@ -100,10 +102,17 @@ const crearSesion = async (configId, datosCandidato = {}) => {
           sesion
         );
 
-        console.log(`✅ Email de invitación enviado a ${datosCandidato.email}`);
+        logger.info('Email de invitación enviado', {
+          service: 'sesionService',
+          sesionId: sesion.id
+        });
       } catch (emailError) {
         // No lanzar error, solo advertir - la sesión se creó correctamente
-        console.warn(`⚠️  Error al enviar email de invitación: ${emailError.message}`);
+        logger.warn('Error al enviar email de invitación', {
+          service: 'sesionService',
+          error: emailError.message,
+          sesionId: sesion.id
+        });
       }
     }
 
@@ -280,7 +289,10 @@ const procesarSesionesExpiradas = async () => {
  */
 const finalizarEvaluacion = async (token, umbralAprobacion = null) => {
   try {
-    console.log(`🏁 Finalizando evaluación para sesión: ${token}`);
+    logger.info('Finalizando evaluación de sesión', {
+      service: 'sesionService',
+      tokenLength: token?.length
+    });
 
     // 1. Obtener sesión completa
     const sesion = await sesionesRepository.obtenerSesionCompleta(token);
@@ -291,7 +303,10 @@ const finalizarEvaluacion = async (token, umbralAprobacion = null) => {
 
     // 1.5. Verificar que no esté ya completada (evitar duplicados)
     if (sesion.estado === 'completado') {
-      console.log(`⚠️  La sesión ${token} ya está completada. No se enviarán emails duplicados.`);
+      logger.warn('Sesión ya completada, no se enviarán emails duplicados', {
+        service: 'sesionService',
+        sesionId: sesion.id
+      });
       return sesion;
     }
 
@@ -320,13 +335,21 @@ const finalizarEvaluacion = async (token, umbralAprobacion = null) => {
     // 6. Obtener sesión actualizada
     const sesionFinalizada = await sesionesRepository.obtenerSesionCompleta(token);
 
-    console.log(`✅ Evaluación finalizada - Resultado: ${resultado.resultado} (${resultado.porcentaje}%)`);
-    console.log(`📧 Email reclutador configurado: ${sesionFinalizada.email_reclutador || 'NO CONFIGURADO'}`);
+    logger.info('Evaluación finalizada', {
+      service: 'sesionService',
+      sesionId: sesion.id,
+      resultado: resultado.resultado,
+      porcentaje: resultado.porcentaje,
+      tieneEmailReclutador: !!sesionFinalizada.email_reclutador
+    });
 
     // 📧 ENVIAR EMAILS AUTOMÁTICOS
     // 7. NO enviar email al candidato (solo el reclutador recibe notificación)
     // El candidato ya vio el mensaje de finalización en el chatbot
-    console.log(`ℹ️  No se envía email al candidato (${sesionFinalizada.candidato_email}) - Solo notificación al reclutador`);
+    logger.debug('No se envía email al candidato - Solo notificación al reclutador', {
+      service: 'sesionService',
+      sesionId: sesion.id
+    });
 
     // 8. Notificar al reclutador (si está configurado) con TODA LA INFORMACIÓN
     if (sesionFinalizada.email_reclutador) {
@@ -336,16 +359,26 @@ const finalizarEvaluacion = async (token, umbralAprobacion = null) => {
           .split(',')
           .map(email => email.trim())
           .filter(email => email.length > 0);
-        
-        console.log(`📧 Preparando notificación para ${emailsReclutador.length} reclutador(es): ${emailsReclutador.join(', ')}`);
-        
+
+        logger.info('Preparando notificación para reclutadores', {
+          service: 'sesionService',
+          sesionId: sesion.id,
+          numReclutadores: emailsReclutador.length
+        });
+
         // Obtener TODOS los mensajes de la conversación
         const mensajes = await mensajesRepository.obtenerPorSesion(sesion.id);
-        console.log(`📝 Mensajes obtenidos: ${mensajes.length}`);
+        logger.debug('Mensajes obtenidos para notificación', {
+          service: 'sesionService',
+          numMensajes: mensajes.length
+        });
 
         // Obtener TODAS las evaluaciones con detalles
         const evaluacionesRaw = await evaluacionesRepository.obtenerPorSesion(sesion.id);
-        console.log(`📊 Evaluaciones obtenidas: ${evaluacionesRaw.length}`);
+        logger.debug('Evaluaciones obtenidas para notificación', {
+          service: 'sesionService',
+          numEvaluaciones: evaluacionesRaw.length
+        });
 
         // Enriquecer evaluaciones con texto de respuesta y mapear campos
         const evaluaciones = evaluacionesRaw.map(evaluacion => {
@@ -368,7 +401,10 @@ const finalizarEvaluacion = async (token, umbralAprobacion = null) => {
                   try {
                     return JSON.parse(evaluacion.detalles);
                   } catch (e) {
-                    console.warn('⚠️  Error al parsear detalles de evaluación:', e);
+                    logger.warn('Error al parsear detalles de evaluación', {
+                      service: 'sesionService',
+                      error: e.message
+                    });
                     return null;
                   }
                 })()
@@ -376,8 +412,11 @@ const finalizarEvaluacion = async (token, umbralAprobacion = null) => {
               : null
           };
         });
-        
-        console.log(`✅ Evaluaciones procesadas: ${evaluaciones.length}`);
+
+        logger.debug('Evaluaciones procesadas', {
+          service: 'sesionService',
+          numEvaluaciones: evaluaciones.length
+        });
 
         // Preparar datos COMPLETOS para el email
         const sesionDataCompleta = {
@@ -393,22 +432,39 @@ const finalizarEvaluacion = async (token, umbralAprobacion = null) => {
           umbral_aprobacion: umbral
         };
 
-        console.log('📧 Enviando notificación a los reclutadores...');
-        
+        logger.info('Enviando notificación a reclutadores', {
+          service: 'sesionService',
+          numReclutadores: emailsReclutador.length
+        });
+
         // Enviar a cada reclutador
         for (const emailReclutador of emailsReclutador) {
           try {
             await emailService.notificarReclutador(emailReclutador, sesionDataCompleta);
-            console.log(`✅ Notificación enviada a: ${emailReclutador}`);
+            logger.info('Notificación enviada a reclutador', {
+              service: 'sesionService',
+              sesionId: sesion.id
+            });
           } catch (error) {
-            console.error(`❌ Error al enviar a ${emailReclutador}:`, error.message);
+            logger.error('Error al enviar notificación a reclutador', {
+              service: 'sesionService',
+              error: error.message,
+              sesionId: sesion.id
+            });
           }
         }
-        
-        console.log(`✅ Notificaciones enviadas a ${emailsReclutador.length} reclutador(es)`);
+
+        logger.info('Notificaciones enviadas', {
+          service: 'sesionService',
+          numReclutadores: emailsReclutador.length,
+          sesionId: sesion.id
+        });
       } catch (emailError) {
-        console.error(`❌ Error al notificar al reclutador: ${emailError.message}`);
-        console.error('Stack trace:', emailError.stack);
+        logger.logError(emailError, {
+          service: 'sesionService',
+          operacion: 'notificar_reclutador',
+          sesionId: sesion.id
+        });
         // No lanzar el error, solo registrarlo - la sesión ya está finalizada
       }
     }

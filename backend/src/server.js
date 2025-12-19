@@ -7,6 +7,10 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 
+// Importar configuraciones
+const HTTP_CONSTANTS = require('./shared/constants/http');
+const logger = require('./config/logger');
+
 // Importar rutas
 const configRoutes = require('./modules/chatbot/routes/configRoutes');
 const sesionRoutes = require('./modules/chatbot/routes/sesionRoutes');
@@ -23,10 +27,8 @@ const app = express();
 const PORT = process.env.PORT || 4000;
 
 // ============================================================================
-// CONFIGURACIÓN DE SEGURIDAD
+// SEGURIDAD: Helmet (Headers HTTP seguros)
 // ============================================================================
-
-// 1. Helmet - Protección de headers HTTP
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -36,58 +38,71 @@ app.use(helmet({
       imgSrc: ["'self'", 'data:', 'https:']
     }
   },
-  crossOriginEmbedderPolicy: false // Permitir embeddings si es necesario
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true
+  }
 }));
 
-// 2. Rate Limiting - Prevención de brute force y DoS
+// ============================================================================
+// SEGURIDAD: Rate Limiting (Prevenir ataques de fuerza bruta/DDoS)
+// ============================================================================
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 100, // Límite de 100 requests por IP
-  message: {
-    success: false,
-    message: 'Demasiadas solicitudes desde esta IP. Por favor intente más tarde.'
-  },
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-});
-
-// Aplicar rate limiting a todas las rutas
-app.use(limiter);
-
-// Rate limiting más estricto para rutas de autenticación
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 5, // Solo 5 intentos
-  message: {
-    success: false,
-    message: 'Demasiados intentos de autenticación. Por favor intente más tarde.'
+  windowMs: HTTP_CONSTANTS.RATE_LIMIT_WINDOW_MS,
+  max: HTTP_CONSTANTS.RATE_LIMIT_MAX_REQUESTS,
+  message: 'Demasiadas peticiones desde esta IP, por favor intenta de nuevo más tarde.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    logger.warn('Rate limit excedido', {
+      service: 'rateLimiter',
+      ip: req.ip,
+      ruta: req.originalUrl
+    });
+    res.status(429).json({
+      success: false,
+      error: {
+        type: 'Rate Limit',
+        message: 'Demasiadas peticiones. Intenta de nuevo en 15 minutos.',
+        statusCode: 429
+      }
+    });
   }
 });
 
-// 3. CORS Restrictivo
-const allowedOrigins = process.env.CORS_ORIGINS
-  ? process.env.CORS_ORIGINS.split(',')
-  : ['http://localhost:3000', 'http://localhost:5173']; // Default para desarrollo
+app.use(limiter);
 
-app.use(cors({
+// ============================================================================
+// SEGURIDAD: CORS Configurado (Solo orígenes permitidos)
+// ============================================================================
+const corsOptions = {
   origin: function (origin, callback) {
-    // Permitir requests sin origin (como mobile apps o curl)
+    // Permitir requests sin origin (como Postman, apps móviles)
     if (!origin) return callback(null, true);
 
-    if (allowedOrigins.indexOf(origin) === -1) {
-      const msg = 'La política CORS no permite el acceso desde este origen.';
-      return callback(new Error(msg), false);
+    if (HTTP_CONSTANTS.CORS_ORIGINS.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      logger.warn('CORS bloqueado', {
+        service: 'cors',
+        origin,
+        origenesPermitidos: HTTP_CONSTANTS.CORS_ORIGINS
+      });
+      callback(new Error('No permitido por CORS'));
     }
-    return callback(null, true);
   },
-  credentials: true, // Permitir cookies
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+  credentials: HTTP_CONSTANTS.CORS_CREDENTIALS,
+  optionsSuccessStatus: 200
+};
 
-// 4. Request Size Limits - Prevención de ataques de carga masiva
-app.use(express.json({ limit: '10mb' })); // Límite de 10MB para JSON
-app.use(express.urlencoded({ extended: true, limit: '10mb' })); // Límite de 10MB para URL-encoded
+app.use(cors(corsOptions));
+
+// ============================================================================
+// Middlewares básicos
+// ============================================================================
+app.use(express.json({ limit: HTTP_CONSTANTS.REQUEST_SIZE_LIMIT }));
+app.use(express.urlencoded({ extended: true, limit: HTTP_CONSTANTS.REQUEST_SIZE_LIMIT }));
 
 // Ruta de prueba
 app.get('/', (req, res) => {
@@ -129,24 +144,34 @@ app.use(errorHandler); // Manejo global de errores
 
 // Iniciar servidor
 app.listen(PORT, () => {
-  console.log(`
-╔═══════════════════════════════════════════════════════════╗
-║   Servidor iniciado correctamente                        ║
-║   Puerto: ${PORT}                                           ║
-║   Entorno: ${process.env.NODE_ENV || 'development'}                              ║
-║   URL: http://localhost:${PORT}                             ║
-╚═══════════════════════════════════════════════════════════╝
-  `);
+  logger.info('Servidor iniciado correctamente', {
+    service: 'server',
+    puerto: PORT,
+    entorno: process.env.NODE_ENV || 'development',
+    url: `http://localhost:${PORT}`,
+    seguridad: {
+      helmet: 'activado',
+      rateLimit: `${HTTP_CONSTANTS.RATE_LIMIT_MAX_REQUESTS} req/${HTTP_CONSTANTS.RATE_LIMIT_WINDOW_MS}ms`,
+      cors: HTTP_CONSTANTS.CORS_ORIGINS.join(', ')
+    }
+  });
 });
 
 // Manejo de errores no capturados
 process.on('uncaughtException', (error) => {
-  console.error('Error no capturado:', error);
+  logger.error('Error no capturado en proceso', {
+    service: 'server',
+    error: error.message,
+    stack: error.stack
+  });
   process.exit(1);
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-  console.error('Promesa rechazada no manejada:', reason);
+  logger.error('Promesa rechazada no manejada', {
+    service: 'server',
+    reason: reason
+  });
   process.exit(1);
 });
 

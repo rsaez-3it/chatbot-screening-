@@ -5,6 +5,7 @@
 
 const configRepository = require('../repositories/configRepository.knex');
 const preguntasRepository = require('../repositories/preguntasRepository.knex');
+const logger = require('../../../config/logger');
 
 // ============================================================================
 // CONTROLADORES DE CONFIGURACIÓN
@@ -71,9 +72,13 @@ const obtenerPorId = async (req, res, next) => {
  */
 const crear = async (req, res, next) => {
   try {
-    console.log('🚀 MÉTODO CREAR EJECUTÁNDOSE');
-    console.log('📦 Body recibido:', JSON.stringify(req.body, null, 2));
-    
+    logger.info('Creando nuevo chatbot', { service: 'configController' });
+    logger.debug('Datos recibidos para crear chatbot', {
+      service: 'configController',
+      chatbotNombre: req.body.nombre,
+      numPreguntas: req.body.preguntas?.length || 0
+    });
+
     const datos = req.body;
 
     // Validar campos requeridos
@@ -95,30 +100,46 @@ const crear = async (req, res, next) => {
 
     // Extraer preguntas antes de crear el chatbot
     const preguntas = datos.preguntas || [];
-    console.log('📝 Preguntas recibidas:', preguntas.length);
-    console.log('📝 Datos preguntas:', JSON.stringify(preguntas, null, 2));
+    logger.debug('Preguntas extraídas', {
+      service: 'configController',
+      numPreguntas: preguntas.length
+    });
     delete datos.preguntas;
 
     // Crear el chatbot
     const nuevoId = await configRepository.crear(datos);
-    console.log('✅ Chatbot creado con ID:', nuevoId);
+    logger.info('Chatbot creado exitosamente', {
+      service: 'configController',
+      chatbotId: nuevoId,
+      nombre: datos.nombre
+    });
 
     // NOTA: Las preguntas de perfil (nombre, email, teléfono) ya NO se crean automáticamente
     // porque los datos se capturan desde el formulario de invitaciones (Excel)
 
     // Crear las preguntas de evaluación del usuario
     if (preguntas.length > 0) {
-      console.log('💾 Guardando', preguntas.length, 'preguntas de evaluación...');
+      logger.info('Guardando preguntas de evaluación', {
+        service: 'configController',
+        chatbotId: nuevoId,
+        numPreguntas: preguntas.length
+      });
       for (let i = 0; i < preguntas.length; i++) {
         const pregunta = preguntas[i];
         pregunta.config_id = nuevoId;
         pregunta.orden = i + 1;
-        console.log('💾 Guardando pregunta', i + 1, ':', pregunta.pregunta);
         const preguntaId = await preguntasRepository.crear(pregunta);
-        console.log('✅ Pregunta guardada con ID:', preguntaId);
+        logger.debug('Pregunta guardada', {
+          service: 'configController',
+          preguntaId,
+          orden: i + 1
+        });
       }
     } else {
-      console.log('⚠️ No hay preguntas de evaluación para guardar');
+      logger.debug('No hay preguntas de evaluación para guardar', {
+        service: 'configController',
+        chatbotId: nuevoId
+      });
     }
 
     // Obtener el chatbot completo con preguntas
@@ -175,7 +196,7 @@ const actualizar = async (req, res, next) => {
     if (preguntas.length > 0) {
       // Obtener preguntas existentes
       const preguntasExistentes = await preguntasRepository.obtenerPorConfig(id, false);
-      
+
       // Eliminar preguntas existentes
       for (const pregunta of preguntasExistentes) {
         await preguntasRepository.eliminar(pregunta.id);

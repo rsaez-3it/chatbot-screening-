@@ -8,6 +8,7 @@ const sesionesRepository = require('../repositories/sesionesRepository.knex');
 const preguntasRepository = require('../repositories/preguntasRepository.knex');
 const evaluacionService = require('./evaluacion/evaluacionService');
 const perfilService = require('./perfilService');
+const logger = require('../../../config/logger');
 
 /**
  * Registrar un mensaje del sistema
@@ -136,7 +137,10 @@ const registrarRespuesta = async (sesionId, preguntaId, contenido, metadata = nu
 
     // 👤 PREGUNTA DE PERFIL: Guardar en sesión, NO evaluar
     if (perfilService.esPreguntaPerfil(pregunta)) {
-      console.log(`👤 Guardando dato de perfil: ${pregunta.campo_perfil}`);
+      logger.debug('Guardando dato de perfil', {
+        service: 'mensajeService',
+        campoPerfil: pregunta.campo_perfil
+      });
       
       try {
         // Validar formato de la respuesta
@@ -159,10 +163,16 @@ const registrarRespuesta = async (sesionId, preguntaId, contenido, metadata = nu
           mensaje: 'Dato guardado correctamente'
         };
         
-        console.log(`✅ Dato de perfil guardado: ${pregunta.campo_perfil} = ${contenido}`);
+        logger.info('Dato de perfil guardado', {
+          service: 'mensajeService',
+          campoPerfil: pregunta.campo_perfil
+        });
         
       } catch (perfilError) {
-        console.error('⚠️  Error al guardar dato de perfil:', perfilError);
+        logger.warn('Error al guardar dato de perfil', {
+          service: 'mensajeService',
+          error: perfilError.message
+        });
         mensaje.validacion_perfil = {
           valido: false,
           mensaje: 'Error al guardar el dato'
@@ -173,7 +183,10 @@ const registrarRespuesta = async (sesionId, preguntaId, contenido, metadata = nu
     }
 
     // 🔥 AUTO-EVALUACIÓN: Evaluar la respuesta automáticamente (solo preguntas normales)
-    console.log(`🤖 Evaluando automáticamente respuesta del mensaje ${mensajeId}`);
+    logger.debug('Evaluando automáticamente respuesta', {
+      service: 'mensajeService',
+      mensajeId
+    });
 
     try {
       const resultadoEvaluacion = await evaluacionService.evaluar(
@@ -186,10 +199,17 @@ const registrarRespuesta = async (sesionId, preguntaId, contenido, metadata = nu
       // Agregar evaluación al objeto de retorno
       mensaje.evaluacion = resultadoEvaluacion;
 
-      console.log(`✅ Evaluación automática completada - Cumple: ${resultadoEvaluacion.evaluacion?.cumple}, Puntaje: ${resultadoEvaluacion.evaluacion?.puntaje}`);
+      logger.info('Evaluación automática completada', {
+        service: 'mensajeService',
+        cumple: resultadoEvaluacion.evaluacion?.cumple,
+        puntaje: resultadoEvaluacion.evaluacion?.puntaje
+      });
 
     } catch (evaluacionError) {
-      console.error('⚠️  Error en evaluación automática:', evaluacionError);
+      logger.warn('Error en evaluación automática', {
+        service: 'mensajeService',
+        error: evaluacionError.message
+      });
       // No lanzar error, solo advertir - el mensaje se guardó correctamente
       mensaje.evaluacion = {
         success: false,

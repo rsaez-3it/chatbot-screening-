@@ -8,6 +8,8 @@ const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
+const HTTP_CONSTANTS = require('../constants/http');
+const logger = require('../../config/logger');
 
 // Rutas a las fuentes Century Gothic
 const FONT_REGULAR = path.join(__dirname, '../fonts/centurygothic.ttf');
@@ -21,12 +23,15 @@ const FONT_BOLD = path.join(__dirname, '../fonts/centurygothic_bold.ttf');
 async function generarReporteCandidato(sesionData) {
   try {
     // Descargar logo de 3IT
-    const logoUrl = 'https://static.wixstatic.com/media/3ec04d_1f1f0d021fce4472a254b66aca24f876~mv2.png';
+    const logoUrl = HTTP_CONSTANTS.COMPANY_LOGO_URL;
     let logoBuffer = null;
     try {
       logoBuffer = await descargarImagen(logoUrl);
     } catch (error) {
-      console.warn('No se pudo descargar el logo de 3IT:', error.message);
+      logger.warn('No se pudo descargar el logo de 3IT', {
+        service: 'pdfService',
+        error: error.message
+      });
     }
 
     return new Promise((resolve, reject) => {
@@ -62,7 +67,10 @@ async function generarReporteCandidato(sesionData) {
           try {
             doc.image(logoBuffer, 450, 50, { width: 95 });
           } catch (error) {
-            console.warn('Error al agregar logo al PDF:', error.message);
+            logger.warn('Error al agregar logo al PDF', {
+              service: 'pdfService',
+              error: error.message
+            });
           }
         }
 

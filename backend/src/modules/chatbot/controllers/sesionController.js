@@ -7,6 +7,7 @@ const sesionService = require('../services/sesionService');
 const sesionesRepository = require('../repositories/sesionesRepository.knex'); // 🔒 Usando Knex (seguro)
 const configRepository = require('../repositories/configRepository.knex');
 const perfilService = require('../services/perfilService');
+const HTTP_CONSTANTS = require('../../../shared/constants/http');
 
 /**
  * POST /api/sesiones
@@ -516,7 +517,7 @@ const reenviarInvitacion = async (req, res, next) => {
     });
 
     // Generar nuevo link
-    const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const baseUrl = HTTP_CONSTANTS.FRONTEND_URL;
     const nuevoLink = `${baseUrl}/chat/${nuevoToken}`;
 
     // Enviar email
