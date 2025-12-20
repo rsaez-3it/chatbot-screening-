@@ -3,11 +3,6 @@
   import { composables } from 'uikit-3it-vue'
   import { ref } from 'vue'
 
-  //Constants
-  import { 
-    ENVIROMENT
-  } from '@/constants'
-
   //Components
   import {
     NavbarComponent,
@@ -50,7 +45,6 @@
       :store="storeAuth"
       :logotipo="logotipo"
       :isotipo="isotipo"
-      :enviroment="ENVIROMENT"
       footer="© 2025 3IT"
     />
     <section class="eit-wrapper">

@@ -11,11 +11,11 @@
     </div>
 
     <!-- Error del backend -->
-    <div v-if="store.errorBack" data-eit-mb="4">
+    <div v-if="mensajeError" data-eit-mb="4">
       <AlertComponent
         data-eit-variant="error"
         icon="fa-solid fa-exclamation-triangle"
-        message="Error al procesar la solicitud"
+        :message="mensajeError"
       />
     </div>
 
@@ -359,13 +359,6 @@
             Preguntas del Chatbot
           </h2>
 
-          <AlertComponent
-            data-eit-variant="info"
-            data-eit-mb="4"
-            icon="fa-solid fa-comments"
-            message="Las preguntas se mostrarán UNA POR UNA como chat. El sistema evaluará automáticamente cada respuesta."
-          />
-
           <!-- Lista de preguntas -->
           <div data-eit-mb="4">
             <PreguntaListComponent
@@ -578,6 +571,7 @@ const store = useStoreChatbot()
 // Estado del formulario
 const pasoActual = ref(0)
 const formError = ref(false)
+const mensajeError = ref('')
 const modalPreguntaAbierto = ref(false)
 const preguntaEnEdicion = ref<Pregunta | null>(null)
 const indicePreguntaEnEdicion = ref<number | null>(null)
@@ -730,6 +724,7 @@ function eliminarPregunta(index: number) {
 async function guardarChatbot() {
   try {
     formError.value = false
+    mensajeError.value = ''  // Limpiar error anterior
 
     console.log('🔍 DIAGNÓSTICO - formData completo:', JSON.parse(JSON.stringify(formData.value)))
     console.log('🔍 DIAGNÓSTICO - Preguntas en formData:', formData.value.preguntas)
@@ -738,12 +733,12 @@ async function guardarChatbot() {
     // Validar campos requeridos
     if (!formData.value.nombre_asistente || !formData.value.nombre || !formData.value.email_reclutador) {
       formError.value = true
-      alert('Por favor completa todos los campos requeridos')
+      mensajeError.value = 'Por favor completa todos los campos requeridos'
       return
     }
 
     if (!formData.value.preguntas || formData.value.preguntas.length === 0) {
-      alert('Debes agregar al menos una pregunta')
+      mensajeError.value = 'Debes agregar al menos una pregunta'
       return
     }
 
@@ -755,11 +750,28 @@ async function guardarChatbot() {
       await store.mutationCreateChatbot(formData.value)
     }
 
-    alert(esEdicion.value ? 'Chatbot actualizado exitosamente' : 'Chatbot creado exitosamente')
+    // Redirigir a la lista de chatbots
     router.push('/')
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error al guardar chatbot:', error)
-    alert('Error al guardar el chatbot')
+
+    // Extraer el mensaje específico del backend
+    if (error?.response?.data?.message) {
+      // Mensaje del backend (ej: "Ya existe un chatbot con ese nombre")
+      mensajeError.value = error.response.data.message
+    } else if (error?.response?.data?.error) {
+      // Formato alternativo del backend
+      mensajeError.value = error.response.data.error
+    } else if (error?.message) {
+      // Error genérico de Axios o red
+      mensajeError.value = `Error: ${error.message}`
+    } else {
+      // Fallback
+      mensajeError.value = 'Error al guardar el chatbot. Por favor intenta de nuevo.'
+    }
+
+    // Scroll al inicio para que vea el error
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 }
 </script>
