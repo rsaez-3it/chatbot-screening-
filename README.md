@@ -92,25 +92,19 @@ cp .env.example .env
 ```
 
 **Editar `backend/.env` con tus credenciales:**
-```env
-# Base de datos
-DB_HOST=localhost
-DB_PORT=3306
-DB_USER=root
-DB_PASSWORD=tu_password_mysql
-DB_NAME=chatbot_screening
 
-# Servidor
-PORT=4000
-NODE_ENV=development
+⚠️ **IMPORTANTE:** Usa el archivo `.env.example` como plantilla y completa con TUS valores reales.
 
-# Email (Gmail)
-EMAIL_USER=tu_email@gmail.com
-EMAIL_PASSWORD=tu_app_password_gmail
+```bash
+# Ver plantilla de ejemplo
+cat backend/.env.example
 
-# JWT (generar clave segura)
-JWT_SECRET=tu_clave_secreta_aleatoria_muy_larga
+# Copiar y editar con tus credenciales
+cp backend/.env.example backend/.env
+nano backend/.env  # O usa tu editor favorito
 ```
+
+**Variables requeridas:** Base de datos, servidor, email, JWT (ver `.env.example` para lista completa)
 
 **Iniciar backend:**
 ```bash
@@ -134,9 +128,8 @@ cp .env.example .env
 ```
 
 **Editar `Frontend/.env`:**
-```env
-VITE_API_URL=http://localhost:4000
-```
+
+Configurar la URL del backend (ver `.env.example` para plantilla completa)
 
 **Iniciar frontend:**
 ```bash
