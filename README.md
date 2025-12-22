@@ -305,25 +305,11 @@ Este es un proyecto privado de 3IT. Para contribuir:
 - Commits descriptivos (convencional commits)
 - Tests para nuevas funcionalidades
 
----
-
-## 📄 Licencia
-
-© 2025 **3IT Ingeniería y Desarrollo Ltda.**
-Todos los derechos reservados. Uso exclusivo interno.
-
----
-
-## 📞 Soporte y Contacto
-
-**Desarrolladora:** Romina Sáez
-**Email:** ro.saezp@duocuc.cl
-**Empresa:** 3IT Ingeniería y Desarrollo Ltda.
 
 **Repositorio:** https://github.com/rsaez-3it/chatbot-screening-
 
----
 
 **Versión:** 1.0.0
 **Última actualización:** Diciembre 2025
 **Estado:** ✅ Production-Ready
+
